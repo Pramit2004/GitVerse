@@ -11,6 +11,7 @@ export { default as MergeConflictSimulator } from './Mergeconflictsimulator';
 export { default as PRSimulator           } from './Prsimulator';
 export { default as ManualMergeSimulator  } from './Manualmergesimulator';
 export { default as GitignorePlayground   } from './Gitignoreplayground';
+export { default as GitVerseIDE } from './GitVerseIDE';
 
 import React, { useState, useEffect, useRef } from 'react';
 

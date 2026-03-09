@@ -1,5 +1,5 @@
 import React from 'react';
-import { StagingSimulator, TerminalSimulator } from '../simulators';
+import { StagingSimulator, TerminalSimulator } from '../simulators/Simulators-index';
 import CommitGraphVisualizer from '../simulators/Commitgraphvisualizer';
 import MergeConflictSimulator from '../simulators/Mergeconflictsimulator';
 import PRSimulator            from '../simulators/Prsimulator';

@@ -9,6 +9,7 @@ import CheatsheetPage  from './pages/CheatsheetPage';
 import DashboardPage   from './pages/DashboardPage';
 import SkillTreePage   from './pages/SkillTreePage';
 import CertificationPage from './pages/CertificationPage';
+import IDEPage         from './pages/IDEPage';
 import ChapterView   from './components/chapter/ChapterView';
 import { useReadingProgress, useKeyboard } from './hooks';
 import './styles/global.css';
@@ -37,11 +38,20 @@ function AppInner() {
     'p':      () => { if (view === 'chapter') window.print(); },
     'd':      () => setView('dashboard'),
     'm':      () => setView('skill-tree'),
+    'i':      () => setView('ide'),   // ← NEW: press I to open IDE
   });
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Don't scroll on IDE view — it manages its own full-screen layout
+    if (view !== 'ide') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [view]);
+
+  // IDE gets full screen — no Navbar/Sidebar/grid
+  if (view === 'ide') {
+    return <IDEPage />;
+  }
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', position:'relative' }}>
@@ -85,6 +95,7 @@ function KeyboardLegend() {
     { key:'M',      label:'Skill Map' },
     { key:'C',      label:'All chapters' },
     { key:'S',      label:'Cheatsheet' },
+    { key:'I',      label:'IDE Simulator' },
     { key:'T',      label:'Toggle theme' },
     { key:'P',      label:'Print chapter' },
     { key:'Esc',    label:'Close modal' },

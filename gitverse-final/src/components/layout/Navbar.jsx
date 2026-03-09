@@ -77,6 +77,30 @@ export default function Navbar({ readingProgress = 0 }) {
                 {navBtn('Dashboard',  'dashboard',    '📊')}
                 {navBtn('Cheatsheet', 'cheatsheet',   '📋')}
                 {navBtn('Exam 🎓', 'certification', '🏆')}
+
+                {/* ── IDE Button — NEW ── */}
+                <button
+                  onClick={() => setView('ide')}
+                  title="Open full Git + VS Code simulation (I)"
+                  style={{
+                    background: view==='ide'
+                      ? 'rgba(0,255,136,0.12)'
+                      : 'linear-gradient(135deg, rgba(0,255,136,0.08), rgba(77,171,247,0.08))',
+                    border: `1px solid ${view==='ide' ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.25)'}`,
+                    color: '#00ff88',
+                    borderRadius:'var(--radius-md)', padding:'6px 13px',
+                    cursor:'pointer', fontFamily:'var(--font-mono)', fontSize:11,
+                    whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6,
+                    transition:'all 0.15s',
+                    boxShadow: view==='ide' ? '0 0 12px rgba(0,255,136,0.2)' : 'none',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = view==='ide' ? 'rgba(0,255,136,0.12)' : 'linear-gradient(135deg, rgba(0,255,136,0.08), rgba(77,171,247,0.08))'}
+                >
+                  <span>💻</span>
+                  <span>IDE</span>
+                  <span style={{ background:'rgba(0,255,136,0.15)', border:'1px solid rgba(0,255,136,0.3)', borderRadius:3, padding:'0 4px', fontSize:9, color:'rgba(0,255,136,0.7)' }}>I</span>
+                </button>
               </>
             )}
 
