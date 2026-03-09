@@ -3,7 +3,7 @@ import React, {
 } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════
-   GITVERSE IDE v2 — "Make It Real"
+   GITVERSE IDE v5 — "God Level"
    
    What's new vs v1:
    ✦ Syntax-highlighted editor (contenteditable overlay trick)
@@ -316,6 +316,104 @@ function computeDiff(a, b) {
 
 // ─── Main Component ───────────────────────────────────────────────
 
+// ─── Conflict Resolver Component ─────────────────────────────────
+
+function ConflictResolver({ filePath, content, onResolve, DS }) {
+  const blocks = [];
+  const lines = content.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].startsWith('<<<<<<<')) {
+      const ours = [], theirs = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('=======')) { ours.push(lines[i]); i++; }
+      i++; // skip =======
+      while (i < lines.length && !lines[i].startsWith('>>>>>>>')) { theirs.push(lines[i]); i++; }
+      i++; // skip >>>>>>>
+      blocks.push({ type: 'conflict', ours: ours.join('\n'), theirs: theirs.join('\n') });
+    } else {
+      const ctx = [];
+      while (i < lines.length && !lines[i].startsWith('<<<<<<<')) { ctx.push(lines[i]); i++; }
+      if (ctx.length) blocks.push({ type: 'context', text: ctx.join('\n') });
+    }
+  }
+
+  const [choices, setChoices] = React.useState(() => blocks.map(b => b.type === 'conflict' ? 'ours' : 'context'));
+
+  const resolved = blocks.map((b, i) => {
+    if (b.type === 'context') return b.text;
+    return choices[i] === 'ours' ? b.ours : b.theirs;
+  }).join('\n');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: DS.bg }}>
+      {/* Header */}
+      <div style={{ padding: '10px 14px', background: DS.surface2, borderBottom: `1px solid ${DS.border2}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <span style={{ color: DS.orange, fontSize: 16 }}>⚠</span>
+        <span style={{ color: DS.text1, fontSize: 13, fontFamily: DS.mono, fontWeight: 600 }}>Merge Conflict — {filePath}</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono }}>{blocks.filter(b => b.type === 'conflict').length} conflict{blocks.filter(b => b.type === 'conflict').length !== 1 ? 's' : ''}</span>
+        <button
+          onClick={() => onResolve(resolved)}
+          style={{ background: `${DS.green}18`, border: `1px solid ${DS.green}40`, color: DS.green, borderRadius: 6, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontFamily: DS.mono, fontWeight: 700 }}
+        >
+          ✓ Accept & Resolve
+        </button>
+      </div>
+
+      {/* Blocks */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {blocks.map((block, bi) => {
+          if (block.type === 'context') {
+            return (
+              <div key={bi} style={{ fontFamily: DS.mono, fontSize: 11.5, color: DS.text1, background: DS.surface2, borderRadius: 6, padding: '8px 12px', whiteSpace: 'pre', maxHeight: 80, overflow: 'hidden' }}>
+                {block.text}
+              </div>
+            );
+          }
+          return (
+            <div key={bi} style={{ border: `1px solid ${DS.orange}30`, borderRadius: 8, overflow: 'hidden' }}>
+              {/* Conflict label */}
+              <div style={{ background: DS.surface3, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${DS.border1}` }}>
+                <span style={{ fontSize: 10, color: DS.orange, fontFamily: DS.mono, fontWeight: 700 }}>CONFLICT #{blocks.slice(0, bi).filter(b => b.type === 'conflict').length + 1}</span>
+              </div>
+              {/* Side-by-side */}
+              <div style={{ display: 'flex' }}>
+                {/* Ours */}
+                <div
+                  onClick={() => setChoices(ch => { const n = [...ch]; n[bi] = 'ours'; return n; })}
+                  style={{ flex: 1, padding: '10px 12px', cursor: 'pointer', background: choices[bi] === 'ours' ? `${DS.green}12` : DS.surface1, borderRight: `1px solid ${DS.border1}`, transition: 'background 0.15s', borderBottom: choices[bi] === 'ours' ? `2px solid ${DS.green}` : '2px solid transparent' }}
+                >
+                  <div style={{ fontSize: 9, color: choices[bi] === 'ours' ? DS.green : DS.text1, fontFamily: DS.mono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                    {choices[bi] === 'ours' ? '✓ ' : ''}Current (HEAD / Ours)
+                  </div>
+                  <pre style={{ fontFamily: DS.mono, fontSize: 11.5, color: choices[bi] === 'ours' ? DS.text1 : DS.text1, margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{block.ours || '(empty)'}</pre>
+                </div>
+                {/* Theirs */}
+                <div
+                  onClick={() => setChoices(ch => { const n = [...ch]; n[bi] = 'theirs'; return n; })}
+                  style={{ flex: 1, padding: '10px 12px', cursor: 'pointer', background: choices[bi] === 'theirs' ? `${DS.blue}12` : DS.surface1, transition: 'background 0.15s', borderBottom: choices[bi] === 'theirs' ? `2px solid ${DS.blue}` : '2px solid transparent' }}
+                >
+                  <div style={{ fontSize: 9, color: choices[bi] === 'theirs' ? DS.blue : DS.text1, fontFamily: DS.mono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                    {choices[bi] === 'theirs' ? '✓ ' : ''}Incoming (Theirs)
+                  </div>
+                  <pre style={{ fontFamily: DS.mono, fontSize: 11.5, color: choices[bi] === 'theirs' ? DS.text1 : DS.text1, margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{block.theirs || '(empty)'}</pre>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Preview */}
+      <div style={{ height: 100, background: DS.surface2, borderTop: `1px solid ${DS.border1}`, padding: '8px 14px', overflow: 'auto', flexShrink: 0 }}>
+        <div style={{ fontSize: 9, color: DS.text1, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>Preview of resolved file</div>
+        <pre style={{ fontFamily: DS.mono, fontSize: 11, color: DS.text2, margin: 0, lineHeight: 1.5 }}>{resolved}</pre>
+      </div>
+    </div>
+  );
+}
+
 export default function GitVerseIDE({ onXP, onBack }) {
   // ── State ──
   const [git, setGit] = useState(initGit);
@@ -346,6 +444,23 @@ export default function GitVerseIDE({ onXP, onBack }) {
   const [termInput, setTermInput] = useState('');
   const [termHistory, setTermHistory] = useState([]);
   const [histIdx, setHistIdx] = useState(-1);
+
+  // ── Find in file ──
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findMatches, setFindMatches] = useState([]);
+  const [findIdx, setFindIdx] = useState(0);
+  const findRef = useRef(null);
+
+  // ── CI Pipeline ──
+  const [ciRuns, setCiRuns] = useState([]); // { id, commitHash, msg, status:'running'|'pass'|'fail', steps, startTime }
+  const [ciExpanded, setCiExpanded] = useState(null);
+
+  // ── Guided Challenges ──
+  const [challengeView, setChallengeView] = useState(false);
+  const [completedChallenges, setCompletedChallenges] = useState([]);
+  const [activeChallengeIdx, setActiveChallengeIdx] = useState(null);
+
   const termBodyRef = useRef(null);
   const termInputRef = useRef(null);
   const { lines: termLines, pushLines, clearLines } = useAnimatedTerminal();
@@ -450,6 +565,45 @@ export default function GitVerseIDE({ onXP, onBack }) {
   // ─────────────────────────────────────────────────────────────────
   // ── Git Command Processor ─────────────────────────────────────────
 
+  // ── CI Pipeline: trigger on push ──
+  const triggerCI = useCallback((commitHash, msg) => {
+    const runId = makeHash();
+    const STEPS = [
+      { name: 'Setup Node.js',    duration: 900 },
+      { name: 'Install deps',     duration: 1400 },
+      { name: 'Lint (ESLint)',     duration: 800 },
+      { name: 'Tests (Jest)',      duration: 1600 },
+      { name: 'Build (Vite)',      duration: 1200 },
+      { name: 'Deploy preview',   duration: 700 },
+    ];
+    const willFail = msg.toLowerCase().includes('wip') || msg.toLowerCase().includes('broken');
+    const failAt = willFail ? Math.floor(Math.random() * 3) + 2 : -1;
+
+    setCiRuns(prev => [
+      { id: runId, commitHash, msg, status: 'running', steps: STEPS.map(s => ({ ...s, status: 'pending' })), startTime: Date.now(), failAt },
+      ...prev.slice(0, 9)
+    ]);
+    setCiExpanded(runId);
+
+    let delay = 400;
+    STEPS.forEach((step, i) => {
+      setTimeout(() => {
+        setCiRuns(prev => prev.map(run => {
+          if (run.id !== runId) return run;
+          const steps = run.steps.map((s, si) => {
+            if (si < i) return { ...s, status: si === run.failAt ? 'fail' : 'pass' };
+            if (si === i) return { ...s, status: run.failAt === i ? 'fail' : 'running' };
+            return s;
+          });
+          const failed = run.failAt === i;
+          return { ...run, steps, status: failed ? 'fail' : (i === STEPS.length - 1 ? 'pass' : 'running') };
+        }));
+      }, delay);
+      delay += step.duration;
+    });
+  }, []);
+
+  // ── Find in file ──
   const runCommand = useCallback((rawCmd) => {
     const cmd = rawCmd.trim();
     if (!cmd) return;
@@ -998,6 +1152,13 @@ export default function GitVerseIDE({ onXP, onBack }) {
           out(`✓ ${g.HEAD} → ${rName}/${g.HEAD}`, 'success');
           setTimeout(() => advanceWorkflow(4), 500);
           if (onXP) onXP(20, 'git push');
+          // Trigger CI pipeline for each new commit
+          const pushedBranch = parts[3] || g.HEAD;
+          const latestHash = g.branches[g.HEAD];
+          if (latestHash) {
+            const latestCommit = g.commits.find(c => c.hash === latestHash);
+            if (latestCommit) setTimeout(() => triggerCI(latestHash, latestCommit.msg), 600);
+          }
           break;
         }
 
@@ -1111,7 +1272,69 @@ export default function GitVerseIDE({ onXP, onBack }) {
       setTimeout(() => pushLines(output), 0);
       return g;
     });
-  }, [fs, allPaths, isIgnored, pushLines, clearLines, flash, advanceWorkflow, saveFile, createFile, deleteFilePath, renameFile, onXP]);
+  }, [fs, allPaths, isIgnored, pushLines, clearLines, flash, advanceWorkflow, saveFile, createFile, deleteFilePath, renameFile, onXP, triggerCI]);
+
+  const runFind = useCallback((query) => {
+    if (!query || !activeTab || fs[activeTab] === undefined) { setFindMatches([]); return; }
+    const lines = fs[activeTab].split('');
+    const matches = [];
+    lines.forEach((line, li) => {
+      let idx = 0;
+      while (true) {
+        const pos = line.toLowerCase().indexOf(query.toLowerCase(), idx);
+        if (pos === -1) break;
+        matches.push({ line: li, col: pos, text: line.slice(pos, pos + query.length) });
+        idx = pos + 1;
+      }
+    });
+    setFindMatches(matches);
+    setFindIdx(0);
+  }, [activeTab, fs]);
+
+  useEffect(() => { runFind(findQuery); }, [findQuery, activeTab, runFind]);
+
+  // Focus find input when opened
+  useEffect(() => {
+    if (findOpen && findRef.current) findRef.current.focus();
+  }, [findOpen]);
+
+  // Ctrl+F to open find
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); setFindOpen(o => !o); }
+      if (e.key === 'Escape' && findOpen) setFindOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [findOpen]);
+
+  // ── Guided Challenges ──
+  const CHALLENGES = [
+    { id:0,  title:'Hello Git',         xp:50,  icon:'🌱', desc:'Initialize your first repo and make an initial commit.', check: (g) => g.commits.length >= 1 },
+    { id:1,  title:'Stage Master',      xp:75,  icon:'📦', desc:'Stage at least 3 files at once using git add.', check: (g) => Object.keys(g.staged).length >= 3 },
+    { id:2,  title:'Branch Out',        xp:100, icon:'🌿', desc:'Create a new branch called feature/hello and switch to it.', check: (g) => !!g.branches['feature/hello'] },
+    { id:3,  title:'Merge It',          xp:150, icon:'🔀', desc:'Merge feature/hello into main.', check: (g) => g.commits.some(c => c.msg.toLowerCase().includes('merge')) },
+    { id:4,  title:'Conflict Slayer',   xp:200, icon:'⚔️', desc:'Resolve a merge conflict and commit the resolution.', check: (g) => !g.merging && g.commits.some(c => c.msg.toLowerCase().includes('conflict') || c.msg.toLowerCase().includes('resolve') || c.msg.toLowerCase().includes('merge')) },
+    { id:5,  title:'Tag Release',       xp:100, icon:'🏷️', desc:'Create a tag called v1.0.0 on your latest commit.', check: (g) => !!g.tags?.['v1.0.0'] },
+    { id:6,  title:'Stash & Pop',       xp:125, icon:'🎒', desc:'Stash your work, then pop it back.', check: (g, hist) => hist.some(h => h.includes('stash pop') || h.includes('stash apply')) },
+    { id:7,  title:'Undo Artist',       xp:150, icon:'↩️', desc:'Use git reset or git revert to undo a commit.', check: (g, hist) => hist.some(h => h.startsWith('git reset') || h.startsWith('git revert')) },
+    { id:8,  title:'Push to Remote',    xp:175, icon:'🚀', desc:'Push your commits to origin main.', check: (g) => g.remotes?.origin?.pushed?.main },
+    { id:9,  title:'Open a PR',         xp:250, icon:'🔁', desc:'Open a pull request from feature/hello to main.', check: (g, hist, prs) => prs.length >= 1 },
+  ];
+
+  // Auto-check challenges on git/PR state changes
+  useEffect(() => {
+    CHALLENGES.forEach(ch => {
+      if (completedChallenges.includes(ch.id)) return;
+      if (ch.check(git, termHistory, prs)) {
+        setCompletedChallenges(prev => [...prev, ch.id]);
+        if (onXP) onXP(ch.xp, ch.title);
+        pushLines([{ type: 'success', text: `🏆 Challenge unlocked: "${ch.title}" +${ch.xp} XP` }]);
+      }
+    });
+  }, [git, termHistory, prs, completedChallenges]);
+
+
 
   // ─────────────────────────────────────────────────────────────────
   // ── Folder Tree ───────────────────────────────────────────────────
@@ -2057,41 +2280,99 @@ export default function GitVerseIDE({ onXP, onBack }) {
 
           {/* ── COMMITS ── */}
           {ghTab === 'commits' && (
-            <div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
               {!reachableCommits.length ? (
                 <div style={{ padding: 24, textAlign: 'center', color: DS.text1, fontSize: 12, fontFamily: DS.mono }}>No commits yet — run git init then commit</div>
-              ) : reachableCommits.map((c, i) => {
-                const bLabels = Object.entries(git.branches).filter(([, h]) => h === c.hash).map(([b]) => b);
-                const tLabels = Object.entries(git.tags || {}).filter(([, h]) => h === c.hash).map(([t]) => t);
-                const isSel = selectedCommit?.hash === c.hash;
-                return (
-                  <div key={c.hash} className="gv-pop-in">
-                    <div onClick={() => setSelectedCommit(isSel ? null : c)} className="gv-commit-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px', borderBottom: `1px solid ${DS.border1}`, cursor: 'pointer', background: isSel ? `${DS.green}05` : 'transparent', transition: 'background 0.1s' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 2 }}>
-                        <div style={{ width: 11, height: 11, borderRadius: '50%', background: i === 0 ? DS.green : DS.surface4, border: `2px solid ${i === 0 ? DS.green : DS.border3}`, flexShrink: 0, boxShadow: i === 0 ? `0 0 8px ${DS.green}60` : 'none' }} />
-                        {i < reachableCommits.length - 1 && <div style={{ width: 1, height: 28, background: DS.border2, marginTop: 3 }} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 3 }}>
-                          {bLabels.map(b => <Tag key={b} color={b === git.HEAD ? DS.green : DS.blue}>{b === git.HEAD ? `HEAD→${b}` : b}</Tag>)}
-                          {tLabels.map(t => <Tag key={t} color={DS.orange}>🏷 {t}</Tag>)}
+              ) : (() => {
+                // Build multi-branch graph columns
+                const allBranches = Object.keys(git.branches).filter(b => git.branches[b]);
+                const branchColors = ['#00e5a0','#4d9fff','#b47aff','#ff9f43','#ff5252','#00d4ff'];
+                const branchCol = {};
+                allBranches.forEach((b, i) => { branchCol[b] = i % branchColors.length; });
+
+                // Map commits to their branches
+                const commitBranch = {};
+                allBranches.forEach(b => {
+                  let h = git.branches[b];
+                  while (h) {
+                    if (!commitBranch[h]) commitBranch[h] = b;
+                    const commit = git.commits.find(x => x.hash === h);
+                    if (!commit) break;
+                    h = commit.parent;
+                  }
+                });
+
+                return reachableCommits.map((commit, i) => {
+                  const bLabels = Object.entries(git.branches).filter(([, h]) => h === commit.hash).map(([b]) => b);
+                  const tLabels = Object.entries(git.tags || {}).filter(([, h]) => h === commit.hash).map(([t]) => t);
+                  const isHead = git.branches[git.HEAD] === commit.hash;
+                  const isSel = selectedCommit?.hash === commit.hash;
+                  const branchName = commitBranch[commit.hash] || git.HEAD;
+                  const col = branchCol[branchName] ?? 0;
+                  const lineColor = branchColors[col];
+                  const isMerge = !!commit.mergeParent;
+
+                  return (
+                    <div key={commit.hash} className="gv-pop-in">
+                      <div
+                        onClick={() => setSelectedCommit(isSel ? null : commit)}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 0, padding: '0 10px', cursor: 'pointer', background: isSel ? `${DS.green}08` : 'transparent', transition: 'background 0.1s', borderBottom: `1px solid ${DS.border1}` }}
+                      >
+                        {/* Graph lane */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 22, flexShrink: 0, paddingTop: 11 }}>
+                          {/* Vertical line above */}
+                          {i > 0 && <div style={{ width: 2, height: 8, background: lineColor + '60', marginBottom: 0, borderRadius: 1 }} />}
+                          {/* Node dot */}
+                          <div style={{ width: isMerge ? 12 : 10, height: isMerge ? 12 : 10, borderRadius: '50%', background: isHead ? lineColor : 'transparent', border: `2px solid ${lineColor}`, flexShrink: 0, boxShadow: isHead ? `0 0 8px ${lineColor}80` : 'none', zIndex: 1 }} />
+                          {/* Vertical line below */}
+                          {i < reachableCommits.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 12, background: lineColor + '60', marginTop: 0, borderRadius: 1 }} />}
                         </div>
-                        <div style={{ fontSize: 12, color: '#d8eaff', fontFamily: DS.mono, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.msg}</div>
-                        <div style={{ fontSize: 10, color: DS.text1, display: 'flex', gap: 8, fontFamily: DS.mono }}>
-                          <span>{c.author}</span>
-                          <span style={{ color: DS.text1 }}>{c.hash.slice(0, 7)}</span>
-                          <span>{timeAgo(c.date)}</span>
+
+                        {/* Commit info */}
+                        <div style={{ flex: 1, minWidth: 0, padding: '8px 0 8px 8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 3 }}>
+                            {isHead && <span style={{ fontSize: 9, background: DS.green + '22', color: DS.green, border: `1px solid ${DS.green}40`, borderRadius: 3, padding: '1px 5px', fontFamily: DS.mono, fontWeight: 700, flexShrink: 0 }}>HEAD</span>}
+                            {bLabels.filter(b => b !== git.HEAD || !isHead).map(b => (
+                              <span key={b} style={{ fontSize: 9, background: branchColors[branchCol[b] ?? 0] + '20', color: branchColors[branchCol[b] ?? 0], border: `1px solid ${branchColors[branchCol[b] ?? 0]}40`, borderRadius: 3, padding: '1px 5px', fontFamily: DS.mono, flexShrink: 0 }}>{b}</span>
+                            ))}
+                            {tLabels.map(t => (
+                              <span key={t} style={{ fontSize: 9, background: DS.yellow + '20', color: DS.yellow, border: `1px solid ${DS.yellow}40`, borderRadius: 3, padding: '1px 5px', fontFamily: DS.mono, flexShrink: 0 }}>🏷 {t}</span>
+                            ))}
+                            {isMerge && <span style={{ fontSize: 9, color: DS.purple, fontFamily: DS.mono, flexShrink: 0 }}>⑂ merge</span>}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#d8eaff', fontFamily: DS.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{commit.msg}</div>
+                          <div style={{ display: 'flex', gap: 10, marginTop: 3 }}>
+                            <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>{commit.hash.slice(0,7)}</span>
+                            <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>{timeAgo(commit.date)}</span>
+                            {commit.stats && <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>+{commit.stats.added || 0} -{commit.stats.deleted || 0}</span>}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Expanded commit diff */}
+                      {isSel && (
+                        <div className="gv-pop-in" style={{ background: DS.bg, borderBottom: `1px solid ${DS.border1}`, padding: '10px 14px' }}>
+                          <div style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono, marginBottom: 8 }}>
+                            {commit.author} · {new Date(commit.date).toLocaleString()}
+                          </div>
+                          {commit.snapshot && Object.keys(commit.snapshot).slice(0, 5).map(path => (
+                            <div key={path} style={{ marginBottom: 6 }}>
+                              <div style={{ fontSize: 11, color: DS.cyan, fontFamily: DS.mono, marginBottom: 3 }}>📄 {path}</div>
+                              {computeDiff('', commit.snapshot[path] || '').slice(0, 8).map((d, di) => (
+                                <div key={di} style={{ fontFamily: DS.mono, fontSize: 11, color: d.type === 'add' ? DS.green : d.type === 'del' ? DS.red : DS.text1, background: d.type === 'add' ? `${DS.green}09` : d.type === 'del' ? `${DS.red}09` : 'transparent', padding: '1px 6px', lineHeight: 1.5 }}>
+                                  {d.type === 'add' ? '+' : d.type === 'del' ? '-' : ' '} {d.content}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {isSel && <div style={{ borderBottom: `1px solid ${DS.border1}`, background: DS.bg }}>{renderCommitDiff(c)}</div>}
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           )}
-
-          {/* ── BRANCHES ── */}
           {ghTab === 'branches' && (
             <div style={{ padding: 12 }}>
               <div style={{ marginBottom: 14 }}>
@@ -2188,20 +2469,54 @@ export default function GitVerseIDE({ onXP, onBack }) {
 
           {/* ── ACTIONS (CI) ── */}
           {ghTab === 'actions' && (
-            <div style={{ padding: 14 }}>
-              <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Recent Workflow Runs</div>
-              {!git.commits.length ? (
-                <div style={{ textAlign: 'center', color: DS.text1, fontSize: 12, fontFamily: DS.mono, padding: 20 }}>Push a commit to trigger workflows</div>
-              ) : git.commits.slice(-5).reverse().map(c => {
-                const pass = Math.random() > 0.25;
+            <div style={{ padding: 10, overflowY: 'auto', flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 1 }}>Workflow Runs</div>
+                {!git.remotes?.origin?.pushed?.main && (
+                  <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>push to trigger</div>
+                )}
+              </div>
+              {!ciRuns.length ? (
+                <div style={{ textAlign: 'center', padding: '24px 16px' }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>⚡</div>
+                  <div style={{ color: DS.text1, fontSize: 12, fontFamily: DS.mono, marginBottom: 8 }}>No runs yet</div>
+                  <div style={{ color: DS.text1, fontSize: 11, fontFamily: DS.mono }}>git push to trigger CI pipeline</div>
+                </div>
+              ) : ciRuns.map(run => {
+                const isExpanded = ciExpanded === run.id;
+                const statusColor = run.status === 'pass' ? DS.green : run.status === 'fail' ? DS.red : DS.orange;
+                const statusIcon = run.status === 'pass' ? '✅' : run.status === 'fail' ? '❌' : '🔄';
+                const elapsed = Math.round((Date.now() - run.startTime) / 1000);
                 return (
-                  <div key={c.hash} style={{ padding: '9px 11px', borderRadius: 8, border: `1px solid ${DS.border1}`, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 16 }}>{pass ? '✅' : '❌'}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: DS.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: DS.mono }}>{c.msg}</div>
-                      <div style={{ fontSize: 10, color: DS.text1, marginTop: 2, fontFamily: DS.mono }}>CI / {c.hash.slice(0, 7)} · {timeAgo(c.date)}</div>
+                  <div key={run.id} style={{ borderRadius: 8, border: `1px solid ${isExpanded ? statusColor + '35' : DS.border1}`, marginBottom: 8, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+                    {/* Run header */}
+                    <div onClick={() => setCiExpanded(isExpanded ? null : run.id)} style={{ padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', background: isExpanded ? DS.surface3 : 'transparent' }}>
+                      <span style={{ fontSize: 15, animation: run.status === 'running' ? 'spin 1s linear infinite' : 'none' }}>{statusIcon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: DS.text1, fontFamily: DS.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{run.msg}</div>
+                        <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, marginTop: 2 }}>{run.commitHash.slice(0,7)} · {run.status === 'running' ? `${elapsed}s` : timeAgo(run.startTime)}</div>
+                      </div>
+                      <span style={{ fontSize: 10, color: statusColor, fontFamily: DS.mono, fontWeight: 700, flexShrink: 0 }}>{run.status}</span>
+                      <span style={{ color: DS.text1, fontSize: 10 }}>{isExpanded ? '▲' : '▼'}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: pass ? DS.green : DS.red, fontWeight: 700, fontFamily: DS.mono }}>{pass ? 'passed' : 'failed'}</span>
+                    {/* Expanded steps */}
+                    {isExpanded && (
+                      <div style={{ padding: '6px 12px 10px', background: DS.bg, borderTop: `1px solid ${DS.border1}` }}>
+                        {run.steps.map((step, si) => {
+                          const sc = step.status === 'pass' ? DS.green : step.status === 'fail' ? DS.red : step.status === 'running' ? DS.orange : DS.text1;
+                          const si2 = step.status === 'pass' ? '✓' : step.status === 'fail' ? '✗' : step.status === 'running' ? '●' : '○';
+                          return (
+                            <div key={si} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: si < run.steps.length - 1 ? `1px solid ${DS.border1}` : 'none' }}>
+                              <span style={{ fontSize: 11, color: sc, fontFamily: DS.mono, width: 12, textAlign: 'center', flexShrink: 0, animation: step.status === 'running' ? 'gv-pulse 1s infinite' : 'none' }}>{si2}</span>
+                              <span style={{ fontSize: 11, color: step.status === 'pending' ? DS.text1 : DS.text2, fontFamily: DS.mono, flex: 1 }}>{step.name}</span>
+                              {step.status !== 'pending' && (
+                                <span style={{ fontSize: 10, color: sc, fontFamily: DS.mono, flexShrink: 0 }}>{step.status === 'running' ? '…' : `${Math.round(step.duration / 1000 * (0.8 + Math.random() * 0.4))}s`}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -2316,6 +2631,19 @@ export default function GitVerseIDE({ onXP, onBack }) {
             ))
           )}
         </div>
+
+        {/* Challenges button */}
+        <button
+          onClick={() => setChallengeView(v => !v)}
+          style={{ background: challengeView ? `${DS.purple}20` : 'none', border: `1px solid ${challengeView ? DS.purple : DS.border2}`, color: challengeView ? DS.purple : DS.text1, borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', fontFamily: DS.mono, display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s', flexShrink: 0, marginRight: 8 }}
+          title="Guided Challenges"
+        >
+          <span>🎮</span>
+          {!isMobile && <span>Challenges</span>}
+          {completedChallenges.length > 0 && (
+            <span style={{ background: DS.purple, color: '#fff', borderRadius: 10, padding: '1px 5px', fontSize: 9, fontWeight: 700 }}>{completedChallenges.length}/{CHALLENGES.length}</span>
+          )}
+        </button>
       </div>
 
       {/* ── Workflow banner ── */}
@@ -2466,11 +2794,51 @@ export default function GitVerseIDE({ onXP, onBack }) {
                         )}
                         <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 0.5 }}>{fileType(activeTab)}</span>
                       </div>
-                      <SyntaxHighlightedEditor
+    
+                  {/* ── Conflict Resolver (takes over editor when merging + conflict markers present) ── */}
+                  {git.merging && activeTab && fs[activeTab]?.includes('<<<<<<<') ? (
+                    <ConflictResolver
+                      filePath={activeTab}
+                      content={fs[activeTab]}
+                      DS={DS}
+                      onResolve={(resolved) => {
+                        saveFile(activeTab, resolved);
+                        flash([activeTab], 'green');
+                        runCommand('git add ' + activeTab);
+                        pushLines([{ type: 'success', text: `✓ Conflict resolved in ${activeTab}. Now run: git commit` }]);
+                      }}
+                    />
+                  ) : (
+                  <>
+                  {/* ── Find in file bar ── */}
+                  {findOpen && (
+                    <div style={{ height: 38, background: DS.surface3, borderBottom: `1px solid ${DS.border2}`, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', flexShrink: 0, zIndex: 20 }}>
+                      <span style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono, flexShrink: 0 }}>🔍</span>
+                      <input
+                        ref={findRef}
+                        value={findQuery}
+                        onChange={e => setFindQuery(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.shiftKey ? setFindIdx(i => (i - 1 + findMatches.length) % Math.max(1, findMatches.length)) : setFindIdx(i => (i + 1) % Math.max(1, findMatches.length)); }
+                          if (e.key === 'Escape') { setFindOpen(false); setFindQuery(''); }
+                        }}
+                        placeholder="Find in file…"
+                        style={{ flex: 1, background: DS.surface4, border: `1px solid ${DS.border2}`, borderRadius: 5, padding: '3px 8px', color: DS.text1, fontFamily: DS.mono, fontSize: 12, outline: 'none' }}
+                      />
+                      <span style={{ fontSize: 11, color: findMatches.length ? DS.text2 : DS.text1, fontFamily: DS.mono, flexShrink: 0, minWidth: 60 }}>
+                        {findMatches.length ? `${findIdx + 1} / ${findMatches.length}` : 'no results'}
+                      </span>
+                      <button onClick={() => setFindIdx(i => (i - 1 + Math.max(1, findMatches.length)) % Math.max(1, findMatches.length))} style={{ background: 'none', border: `1px solid ${DS.border2}`, color: DS.text2, borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontSize: 12 }}>↑</button>
+                      <button onClick={() => setFindIdx(i => (i + 1) % Math.max(1, findMatches.length))} style={{ background: 'none', border: `1px solid ${DS.border2}`, color: DS.text2, borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontSize: 12 }}>↓</button>
+                      <button onClick={() => { setFindOpen(false); setFindQuery(''); }} style={{ background: 'none', border: 'none', color: DS.text1, cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
+                    </div>
+                  )}
+                  <SyntaxHighlightedEditor
                         value={fs[activeTab]}
                         onChange={val => saveFile(activeTab, val)}
                         fileType={fileType(activeTab)}
                         onKeyDown={e => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); setFindOpen(o => !o); return; }
                           if (e.key === 'Tab') {
                             e.preventDefault();
                             const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
@@ -2481,13 +2849,15 @@ export default function GitVerseIDE({ onXP, onBack }) {
                         }}
                       />
                     </>
+                  )}
+                  </>
                   ) : (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, background: DS.surface1 }}>
                       <div style={{ fontSize: 52, filter: `drop-shadow(0 0 16px ${DS.green}30)` }}>📝</div>
                       <div style={{ fontSize: 14, color: DS.text1, fontFamily: DS.mono }}>Select a file to edit</div>
                       <div style={{ fontSize: 12, color: DS.text1, fontFamily: DS.mono }}>or right-click in explorer</div>
                     </div>
-                  )}
+                  )}  {/* end outer conditional */}
                 </div>
               )}
 
@@ -2553,6 +2923,29 @@ export default function GitVerseIDE({ onXP, onBack }) {
                         if (e.key === 'Enter') { runCommand(termInput); setTermInput(''); }
                         else if (e.key === 'ArrowUp') { e.preventDefault(); setHistIdx(i => { const n = Math.min(i + 1, termHistory.length - 1); setTermInput(termHistory[n] || ''); return n; }); }
                         else if (e.key === 'ArrowDown') { e.preventDefault(); setHistIdx(i => { const n = Math.max(i - 1, -1); setTermInput(n === -1 ? '' : termHistory[n] || ''); return n; }); }
+                        else if (e.key === 'Tab') {
+                          e.preventDefault();
+                          const v = termInput.trim();
+                          const parts = v.split(' ');
+                          // Complete git subcommands
+                          const GIT_SUBS = ['init','status','add','commit','log','diff','branch','switch','checkout','merge','stash','reset','revert','tag','remote','push','pull','fetch','clone','show','config','blame','reflog','cherry-pick','rebase','restore','help'];
+                          const SHELL_CMDS = ['git','ls','cat','touch','mkdir','echo','rm','mv','clear','help'];
+                          if (parts.length === 1) {
+                            const matches = SHELL_CMDS.filter(c => c.startsWith(v));
+                            if (matches.length === 1) setTermInput(matches[0] + ' ');
+                            else if (matches.length > 1) pushLines([{ type: 'muted', text: matches.join('  ') }]);
+                          } else if (parts[0] === 'git' && parts.length === 2) {
+                            const matches = GIT_SUBS.filter(s => s.startsWith(parts[1]));
+                            if (matches.length === 1) setTermInput('git ' + matches[0] + ' ');
+                            else if (matches.length > 1) pushLines([{ type: 'muted', text: 'git ' + matches.join('  git ') }]);
+                          } else {
+                            // File path completion
+                            const prefix = parts[parts.length - 1];
+                            const matches = allPaths.filter(p => p.startsWith(prefix));
+                            if (matches.length === 1) setTermInput(parts.slice(0,-1).join(' ') + ' ' + matches[0]);
+                            else if (matches.length > 1) pushLines([{ type: 'muted', text: matches.join('  ') }]);
+                          }
+                        }
                       }}
                       placeholder="type a command (try: git init)"
                       autoFocus
@@ -2581,6 +2974,72 @@ export default function GitVerseIDE({ onXP, onBack }) {
         )}
       </div>
 
+      {/* ── Challenges Panel Overlay ── */}
+      {challengeView && (
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(380px, 100%)', background: `${DS.surface1}fc`, backdropFilter: 'blur(16px)', borderLeft: `1px solid ${DS.border2}`, zIndex: 50, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(0,0,0,0.5)', animation: 'gv-slide-in 0.22s ease' }}>
+          {/* Header */}
+          <div style={{ padding: '14px 16px 12px', borderBottom: `1px solid ${DS.border1}`, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <span style={{ fontSize: 20 }}>🎮</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: DS.text1, fontFamily: DS.mono }}>Guided Challenges</div>
+              <div style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono }}>{completedChallenges.length}/{CHALLENGES.length} completed · {CHALLENGES.filter(ch => completedChallenges.includes(ch.id)).reduce((a, ch) => a + ch.xp, 0)} XP earned</div>
+            </div>
+            <button onClick={() => setChallengeView(false)} style={{ background: 'none', border: 'none', color: DS.text1, cursor: 'pointer', fontSize: 18 }}>×</button>
+          </div>
+
+          {/* XP progress bar */}
+          <div style={{ padding: '8px 16px', borderBottom: `1px solid ${DS.border1}`, flexShrink: 0 }}>
+            <div style={{ height: 6, background: DS.surface4, borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${(completedChallenges.length / CHALLENGES.length) * 100}%`, background: `linear-gradient(90deg, ${DS.purple}, ${DS.blue})`, borderRadius: 3, transition: 'width 0.5s ease', boxShadow: `0 0 8px ${DS.purple}60` }} />
+            </div>
+          </div>
+
+          {/* Challenge list */}
+          <div style={{ flex: 1, overflow: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {CHALLENGES.map((ch, i) => {
+              const done = completedChallenges.includes(ch.id);
+              const isActive = activeChallengeIdx === i;
+              return (
+                <div key={ch.id}
+                  onClick={() => setActiveChallengeIdx(isActive ? null : i)}
+                  style={{ background: done ? `${DS.green}08` : isActive ? `${DS.purple}10` : DS.surface3, border: `1px solid ${done ? DS.green + '30' : isActive ? DS.purple + '40' : DS.border1}`, borderRadius: 10, padding: '11px 14px', cursor: 'pointer', transition: 'all 0.15s' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 20, flexShrink: 0, filter: done ? 'none' : 'grayscale(60%)' }}>{ch.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: done ? DS.green : DS.text1, fontFamily: DS.mono, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {done ? '✓ ' : ''}{ch.title}
+                        <span style={{ fontSize: 10, background: done ? `${DS.green}20` : `${DS.purple}15`, color: done ? DS.green : DS.purple, border: `1px solid ${done ? DS.green : DS.purple}30`, borderRadius: 3, padding: '1px 5px', fontWeight: 700, flexShrink: 0 }}>+{ch.xp} XP</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, color: DS.text1 }}>{isActive ? '▲' : '▼'}</span>
+                  </div>
+                  {isActive && (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${DS.border1}` }}>
+                      <p style={{ fontSize: 12, color: DS.text2, margin: '0 0 8px', fontFamily: DS.ui, lineHeight: 1.6 }}>{ch.desc}</p>
+                      {!done && (
+                        <div style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono }}>
+                          {i === 0 && <span>Try: <span style={{ color: DS.cyan }}>git init</span> then <span style={{ color: DS.cyan }}>git commit -m "init"</span></span>}
+                          {i === 1 && <span>Try: <span style={{ color: DS.cyan }}>git add .</span> (stages all files)</span>}
+                          {i === 2 && <span>Try: <span style={{ color: DS.cyan }}>git switch -c feature/hello</span></span>}
+                          {i === 3 && <span>Create commits on feature/hello, then <span style={{ color: DS.cyan }}>git switch main && git merge feature/hello</span></span>}
+                          {i === 4 && <span>Edit the same file on two branches so they conflict, then merge</span>}
+                          {i === 5 && <span>Try: <span style={{ color: DS.cyan }}>git tag v1.0.0</span></span>}
+                          {i === 6 && <span>Try: <span style={{ color: DS.cyan }}>git stash</span> then <span style={{ color: DS.cyan }}>git stash pop</span></span>}
+                          {i === 7 && <span>Try: <span style={{ color: DS.cyan }}>git reset HEAD~1</span> after committing</span>}
+                          {i === 8 && <span>Try: <span style={{ color: DS.cyan }}>git push</span> (init + commit first)</span>}
+                          {i === 9 && <span>Open the GitHub panel → PRs tab → New PR button</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Status bar ── */}
       <div style={{ height: 24, background: `linear-gradient(90deg, ${DS.green}22, ${DS.cyan}15, transparent)`, borderTop: `1px solid ${DS.green}20`, display: 'flex', alignItems: 'center', gap: 14, padding: '0 14px', fontSize: 11, color: DS.text2, flexShrink: 0, fontFamily: DS.mono, position: 'relative', zIndex: 10 }}>
         <span style={{ color: DS.green, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -2592,7 +3051,7 @@ export default function GitVerseIDE({ onXP, onBack }) {
         <div style={{ flex: 1 }} />
         {activeTab && <span style={{ color: DS.text1 }}>{activeTab}</span>}
         {activeTab && <span style={{ color: DS.text1, textTransform: 'uppercase', letterSpacing: 0.5 }}>{fileType(activeTab)}</span>}
-        <span style={{ color: DS.text1 }}>GitVerse IDE v3</span>
+        <span style={{ color: DS.text1 }}>GitVerse IDE v5</span>
       </div>
 
       {/* ── Context menu ── */}
