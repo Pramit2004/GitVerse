@@ -9,8 +9,9 @@ import CheatsheetPage  from './pages/CheatsheetPage';
 import DashboardPage   from './pages/DashboardPage';
 import SkillTreePage   from './pages/SkillTreePage';
 import CertificationPage from './pages/CertificationPage';
-import IDEPage         from './pages/IDEPage';
 import ChapterView   from './components/chapter/ChapterView';
+import GitGuidePage  from './pages/GitGuidePage';
+import IDEPage       from './pages/IDEPage';
 import { useReadingProgress, useKeyboard } from './hooks';
 import './styles/global.css';
 
@@ -38,20 +39,19 @@ function AppInner() {
     'p':      () => { if (view === 'chapter') window.print(); },
     'd':      () => setView('dashboard'),
     'm':      () => setView('skill-tree'),
-    'i':      () => setView('ide'),   // ← NEW: press I to open IDE
+    'g':      () => setView('git-guide'),
+    'i':      () => setView('ide'),
   });
 
   useEffect(() => {
-    // Don't scroll on IDE view — it manages its own full-screen layout
-    if (view !== 'ide') {
+    if (view !== 'ide' && view !== 'git-guide') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [view]);
 
-  // IDE gets full screen — no Navbar/Sidebar/grid
-  if (view === 'ide') {
-    return <IDEPage />;
-  }
+  // Fullscreen views — no navbar/sidebar
+  if (view === 'ide')       return <IDEPage />;
+  if (view === 'git-guide') return <GitGuidePage onBack={() => setView('home')} />;
 
   return (
     <div style={{ minHeight:'100vh', background:'var(--bg-base)', position:'relative' }}>
@@ -89,13 +89,14 @@ function KeyboardLegend() {
   const [visible, setVisible] = React.useState(false);
   const shortcuts = [
     { key:'/',      label:'Search' },
+    { key:'I',      label:'IDE 💻' },
+    { key:'G',      label:'Git Guide 📚' },
     { key:'J / K',  label:'Prev / Next chapter' },
     { key:'H',      label:'Home' },
     { key:'D',      label:'Dashboard' },
     { key:'M',      label:'Skill Map' },
     { key:'C',      label:'All chapters' },
     { key:'S',      label:'Cheatsheet' },
-    { key:'I',      label:'IDE Simulator' },
     { key:'T',      label:'Toggle theme' },
     { key:'P',      label:'Print chapter' },
     { key:'Esc',    label:'Close modal' },

@@ -281,6 +281,92 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── IDE + Git Guide dual banners ─────────────────────── */}
+      <section style={{ padding:'0 clamp(16px,4vw,48px) clamp(32px,4vw,56px)', display:'flex', flexDirection:'column', gap:14 }}>
+
+        {/* IDE Banner */}
+        <div
+          onClick={() => setView('ide')}
+          style={{
+            background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(77,159,255,0.05) 100%)',
+            border: '1px solid rgba(0,212,255,0.2)',
+            borderRadius: 16, padding: 'clamp(16px,2.5vw,24px)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center',
+            gap: 'clamp(14px,2.5vw,22px)', flexWrap: 'wrap',
+            transition: 'all 0.2s', position: 'relative', overflow: 'hidden',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.38)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(0,212,255,0.07)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+        >
+          <div style={{ position:'absolute', top:'-40%', right:'5%', width:'180px', height:'180px', background:'radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%)', pointerEvents:'none' }} />
+          <div style={{ fontSize:'clamp(32px,4vw,44px)', flexShrink:0, filter:'drop-shadow(0 0 12px rgba(0,212,255,0.45))' }}>💻</div>
+          <div style={{ flex:1, minWidth:180 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:5 }}>
+              <span style={{ fontFamily:'var(--font-display)', fontSize:'clamp(15px,2vw,20px)', fontWeight:800, color:'var(--text-primary)' }}>GitVerse IDE</span>
+              <span style={{ fontSize:10, background:'rgba(0,212,255,0.12)', color:'#00d4ff', border:'1px solid rgba(0,212,255,0.25)', borderRadius:20, padding:'2px 9px', fontFamily:'var(--font-mono)', fontWeight:700 }}>INTERACTIVE</span>
+              <span style={{ fontSize:10, background:'rgba(0,229,160,0.1)', color:'#00e5a0', border:'1px solid rgba(0,229,160,0.2)', borderRadius:20, padding:'2px 9px', fontFamily:'var(--font-mono)', fontWeight:700 }}>XP REWARDS</span>
+            </div>
+            <p style={{ color:'var(--text-secondary)', fontSize:13, margin:0, lineHeight:1.55, maxWidth:500 }}>
+              A full VS Code–style IDE in your browser. Real syntax highlighting, animated terminal, GitHub panel, branch visualizer — practice every Git command live.
+            </p>
+          </div>
+          <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}>
+            <div style={{ background:'rgba(0,212,255,0.12)', border:'1px solid rgba(0,212,255,0.3)', color:'#00d4ff', borderRadius:10, padding:'9px 18px', fontFamily:'var(--font-mono)', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:7, boxShadow:'0 0 18px rgba(0,212,255,0.14)' }}>
+              Launch IDE <span style={{ fontSize:16 }}>→</span>
+            </div>
+            <span style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>press I anytime</span>
+          </div>
+        </div>
+
+        {/* ── Git Complete Guide Banner ─────────────────────── */}
+        <div
+          onClick={() => setView('git-guide')}
+          style={{
+            background: 'linear-gradient(135deg, rgba(0,229,160,0.06) 0%, rgba(0,212,255,0.04) 50%, rgba(77,159,255,0.06) 100%)',
+            border: '1px solid rgba(0,229,160,0.2)',
+            borderRadius: 16,
+            padding: 'clamp(20px,3vw,32px)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(16px,3vw,28px)',
+            flexWrap: 'wrap',
+            transition: 'all 0.2s',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,160,0.38)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(0,229,160,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,229,160,0.2)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+        >
+          {/* Background glow orbs */}
+          <div style={{ position:'absolute', top:'-40%', right:'5%', width:'200px', height:'200px', background:'radial-gradient(circle, rgba(0,229,160,0.06) 0%, transparent 70%)', pointerEvents:'none' }} />
+          <div style={{ position:'absolute', bottom:'-40%', left:'10%', width:'160px', height:'160px', background:'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 70%)', pointerEvents:'none' }} />
+
+          <div style={{ fontSize:'clamp(36px,5vw,52px)', flexShrink:0, filter:'drop-shadow(0 0 14px rgba(0,229,160,0.4))' }}>📚</div>
+          <div style={{ flex:1, minWidth:200 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:6 }}>
+              <span style={{ fontFamily:'var(--font-display)', fontSize:'clamp(16px,2vw,22px)', fontWeight:800, color:'var(--text-primary)' }}>Git Complete Guide</span>
+              <span style={{ fontSize:10, background:'rgba(0,229,160,0.12)', color:'#00e5a0', border:'1px solid rgba(0,229,160,0.25)', borderRadius:20, padding:'2px 9px', fontFamily:'var(--font-mono)', fontWeight:700, letterSpacing:0.5 }}>17 SECTIONS</span>
+              <span style={{ fontSize:10, background:'rgba(77,159,255,0.1)', color:'#4d9fff', border:'1px solid rgba(77,159,255,0.2)', borderRadius:20, padding:'2px 9px', fontFamily:'var(--font-mono)', fontWeight:700 }}>BEGINNER → PRO</span>
+            </div>
+            <p style={{ color:'var(--text-secondary)', fontSize:13, margin:0, lineHeight:1.6, maxWidth:560 }}>
+              Branches, Pull Requests, Issues, Merging, Conflicts, Under-the-hood internals — every concept explained with <strong style={{ color:'var(--text-primary)' }}>what, why, how, when &amp; where</strong>. Interactive, searchable, fully responsive.
+            </p>
+            <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
+              {['🌿 Branches','🔀 PRs','🐛 Issues','⚠️ Conflicts','🔬 Internals','📋 Cheatsheet'].map(tag => (
+                <span key={tag} style={{ fontSize:11, color:'var(--text-muted)', background:'var(--bg-elevated)', border:'1px solid var(--border)', borderRadius:20, padding:'2px 10px', fontFamily:'var(--font-mono)' }}>{tag}</span>
+              ))}
+            </div>
+          </div>
+          <div style={{ flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+            <div style={{ background:'rgba(0,229,160,0.12)', border:'1px solid rgba(0,229,160,0.3)', color:'#00e5a0', borderRadius:10, padding:'10px 20px', fontFamily:'var(--font-mono)', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:7, boxShadow:'0 0 20px rgba(0,229,160,0.15)' }}>
+              Open Guide <span style={{ fontSize:16 }}>→</span>
+            </div>
+            <span style={{ fontSize:10, color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>press G anytime</span>
+          </div>
+        </div>
+      </section>
+
       {/* ── Footer ──────────────────────────────────── */}
       <footer style={{ padding:'clamp(24px,4vw,40px) clamp(16px,4vw,48px)', borderTop:'1px solid var(--border)', textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:20, fontWeight:900, color:'var(--green)', marginBottom:6 }}>⚡ GitVerse</div>

@@ -107,6 +107,10 @@ code, pre, kbd { font-family: var(--font-mono); }
 @media (max-width: 768px) {
   :root { --nav-height: 52px; }
 
+  /* Bottom nav bar is 58px — push page content up so nothing hides behind it */
+  body { padding-bottom: 58px; }
+  main { padding-bottom: 58px; }
+
   /* Cheatsheet: single column */
   .cheatsheet-grid {
     grid-template-columns: 1fr !important;

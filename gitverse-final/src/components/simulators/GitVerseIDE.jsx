@@ -140,17 +140,17 @@ function SyntaxHighlightedEditor({ value, onChange, fileType, onKeyDown }) {
   const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
 
   return (
-    <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#1e1e1e' }}>
+    <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#070b12' }}>
       {/* Line numbers */}
       <div style={{
-        width: 48, background: '#1e1e1e', borderRight: '1px solid #2d2d2d',
+        width: 48, background: '#070b12', borderRight: '1px solid rgba(255,255,255,0.05)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         flexShrink: 0, paddingTop: 10, userSelect: 'none', pointerEvents: 'none',
       }}>
         {lines.map(n => (
           <div key={n} style={{
             height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-            paddingRight: 10, fontSize: 12, color: '#495270',
+            paddingRight: 10, fontSize: 12, color: '#2a3d55',
             fontFamily: "'JetBrains Mono', monospace", lineHeight: '20px', flexShrink: 0,
           }}>{n}</div>
         ))}
@@ -164,7 +164,7 @@ function SyntaxHighlightedEditor({ value, onChange, fileType, onKeyDown }) {
           position: 'absolute', left: 48, right: 0, top: 0, bottom: 0,
           padding: '10px 16px 10px 12px',
           fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
-          lineHeight: '20px', color: '#e8edf8', whiteSpace: 'pre',
+          lineHeight: '20px', color: '#e8f0fe', whiteSpace: 'pre',
           overflow: 'hidden', pointerEvents: 'none', userSelect: 'none',
           background: 'transparent', zIndex: 1,
           wordBreak: 'keep-all',
@@ -188,7 +188,7 @@ function SyntaxHighlightedEditor({ value, onChange, fileType, onKeyDown }) {
           fontFamily: "'JetBrains Mono', monospace", fontSize: 13,
           lineHeight: '20px',
           background: 'transparent', border: 'none', outline: 'none',
-          resize: 'none', color: 'transparent', caretColor: '#aeafad',
+          resize: 'none', color: 'transparent', caretColor: '#00e5a0',
           zIndex: 2, overflow: 'auto',
           tabSize: 2, whiteSpace: 'pre',
         }}
@@ -1116,7 +1116,17 @@ export default function GitVerseIDE({ onXP, onBack }) {
   // ─────────────────────────────────────────────────────────────────
   // ── Folder Tree ───────────────────────────────────────────────────
 
-  const folderTree = useMemo(() => {
+  const reachableCommits = useMemo(() => {
+    const chain = [];
+    let cur = git.branches[git.HEAD];
+    while (cur && chain.length < 50) {
+      const c = git.commits.find(x => x.hash === cur);
+      if (!c) break; chain.push(c); cur = c.parent;
+    }
+    return chain;
+  }, [git.commits, git.branches, git.HEAD]);
+
+    const folderTree = useMemo(() => {
     const folders = new Set(['']);
     allPaths.forEach(p => {
       const parts = p.split('/');
@@ -1243,18 +1253,6 @@ export default function GitVerseIDE({ onXP, onBack }) {
   // ── GitHub Panel ──────────────────────────────────────────────────
 
   function renderGitHubPanel() {
-    const reachableCommits = useMemo(() => {
-      const chain = [];
-      let cur = git.branches[git.HEAD];
-      while (cur && chain.length < 50) {
-        const c = git.commits.find(x=>x.hash===cur);
-        if (!c) break;
-        chain.push(c);
-        cur = c.parent;
-      }
-      return chain;
-    }, [git.commits, git.branches, git.HEAD]);
-
     const tabs = [
       { id:'code', label:'<> Code', icon:'📄' },
       { id:'commits', label:'Commits', icon:'🕐' },
@@ -1611,14 +1609,14 @@ export default function GitVerseIDE({ onXP, onBack }) {
   // ─────────────────────────────────────────────────────────────────
   // ── Workflow Banner ───────────────────────────────────────────────
 
-  const WORKFLOW_STEPS = [
-    { id:0, label:'git init', desc:'Initialize repo', cmd:'git init', done: git.initialized },
-    { id:1, label:'Edit files', desc:'Modify a file', cmd:null, done: workflowStep>=1 },
-    { id:2, label:'git add .', desc:'Stage changes', cmd:'git add .', done: workflowStep>=2 || Object.keys(git.staged).length>0 },
-    { id:3, label:'git commit', desc:'Save snapshot', cmd:'git commit -m "my changes"', done: workflowStep>=3 || git.commits.length>0 },
-    { id:4, label:'git push', desc:'Publish to remote', cmd:'git push', done: workflowStep>=4 },
-  ];
-  const currentStep = WORKFLOW_STEPS.find(s=>!s.done);
+  // const WORKFLOW_STEPS = [
+  //   { id:0, label:'git init', desc:'Initialize repo', cmd:'git init', done: git.initialized },
+  //   { id:1, label:'Edit files', desc:'Modify a file', cmd:null, done: workflowStep>=1 },
+  //   { id:2, label:'git add .', desc:'Stage changes', cmd:'git add .', done: workflowStep>=2 || Object.keys(git.staged).length>0 },
+  //   { id:3, label:'git commit', desc:'Save snapshot', cmd:'git commit -m "my changes"', done: workflowStep>=3 || git.commits.length>0 },
+  //   { id:4, label:'git push', desc:'Publish to remote', cmd:'git push', done: workflowStep>=4 },
+  // ];
+  // const currentStep = WORKFLOW_STEPS.find(s=>!s.done);
 
   // ─────────────────────────────────────────────────────────────────
   // ── Terminal line renderer ────────────────────────────────────────
@@ -1657,310 +1655,969 @@ export default function GitVerseIDE({ onXP, onBack }) {
     );
   }
 
+
+  // ═══════════════════════════════════════════════════════════════
+  // ── DESIGN SYSTEM — Obsidian Terminal v3
+  // ═══════════════════════════════════════════════════════════════
+
+  const DS = {
+    // Surfaces
+    bg:        '#05080f',
+    surface1:  '#0a0f1a',
+    surface2:  '#0e1520',
+    surface3:  '#131c2b',
+    surface4:  '#182235',
+    // Borders
+    border1:   'rgba(255,255,255,0.04)',
+    border2:   'rgba(255,255,255,0.07)',
+    border3:   'rgba(255,255,255,0.11)',
+    // Accents
+    green:     '#00e5a0',
+    greenDim:  'rgba(0,229,160,0.08)',
+    greenGlow: '0 0 12px rgba(0,229,160,0.25)',
+    cyan:      '#00d4ff',
+    cyanDim:   'rgba(0,212,255,0.08)',
+    blue:      '#4d9fff',
+    orange:    '#ff9f43',
+    red:       '#ff5252',
+    purple:    '#b47aff',
+    yellow:    '#ffd60a',
+    // Text
+    text1:     '#e8f0fe',
+    text2:     '#8ba3c7',
+    text3:     '#4a6080',
+    text4:     '#2a3d55',
+    // Mono font
+    mono:      "'JetBrains Mono', 'Fira Code', monospace",
+    ui:        "'Inter', system-ui, sans-serif",
+  };
+
+  // ── Responsive breakpoint state ──
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [mobileDrawer, setMobileDrawer] = useState('editor'); // editor|terminal|github
+  const [explorerOpen, setExplorerOpen] = useState(false); // mobile slide-in drawer
+
+  useEffect(() => {
+    const check = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth < 1024 && window.innerWidth >= 640);
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // ── Animation keyframes injected once ──
+  useEffect(() => {
+    if (document.getElementById('gv-ide-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'gv-ide-styles';
+    s.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+      @keyframes gv-blink    { 0%,100%{opacity:1} 50%{opacity:0} }
+      @keyframes gv-pulse    { 0%,100%{opacity:1} 50%{opacity:0.35} }
+      @keyframes gv-shimmer  { 0%{background-position:200% center} 100%{background-position:-200% center} }
+      @keyframes gv-slide-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+      @keyframes gv-pop-in   { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+      @keyframes gv-aurora   { 0%,100%{opacity:0.4;transform:scale(1) rotate(0deg)} 50%{opacity:0.7;transform:scale(1.15) rotate(3deg)} }
+      @keyframes gv-flash-g  { 0%{background:rgba(0,229,160,0.18)} 100%{background:transparent} }
+      @keyframes gv-flash-o  { 0%{background:rgba(255,159,67,0.18)} 100%{background:transparent} }
+      @keyframes gv-flash-r  { 0%{background:rgba(255,82,82,0.18)} 100%{background:transparent} }
+      @keyframes gv-flash-b  { 0%{background:rgba(77,159,255,0.18)} 100%{background:transparent} }
+      @keyframes gv-push-bar { from{width:0} to{width:100%} }
+
+      .gv-flash-g { animation: gv-flash-g 0.8s ease forwards; }
+      .gv-flash-o { animation: gv-flash-o 0.8s ease forwards; }
+      .gv-flash-r { animation: gv-flash-r 0.8s ease forwards; }
+      .gv-flash-b { animation: gv-flash-b 0.8s ease forwards; }
+
+      .gv-root * { box-sizing: border-box; }
+      .gv-root ::-webkit-scrollbar { width:4px; height:4px; }
+      .gv-root ::-webkit-scrollbar-track { background:transparent; }
+      .gv-root ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:4px; }
+      .gv-root ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.15); }
+
+      .gv-tab-btn:hover { background: rgba(255,255,255,0.05) !important; }
+      .gv-nav-btn:hover { background: rgba(255,255,255,0.06) !important; color: #e8f0fe !important; }
+      .gv-file-row:hover { background: rgba(255,255,255,0.035) !important; }
+      .gv-file-row:hover .gv-file-action { opacity: 1 !important; }
+      .gv-file-action { opacity: 0; transition: opacity 0.15s; }
+      .gv-ctx-item:hover { background: rgba(255,255,255,0.06) !important; }
+      .gv-gh-row:hover { background: rgba(255,255,255,0.025) !important; }
+      .gv-commit-row:hover { background: rgba(255,255,255,0.02) !important; }
+      .gv-btn-hover:hover { filter: brightness(1.15); transform: translateY(-1px); }
+      .gv-slide-in { animation: gv-slide-in 0.2s ease forwards; }
+      .gv-pop-in   { animation: gv-pop-in   0.15s ease forwards; }
+
+      .gv-term-input::placeholder { color: rgba(75,100,135,0.6); }
+      .gv-term-input { caret-color: #00e5a0; }
+
+      .gv-workflow-step-active .gv-wf-dot {
+        animation: gv-pulse 1.5s ease-in-out infinite;
+        box-shadow: 0 0 8px rgba(77,159,255,0.6);
+      }
+    `;
+    document.head.appendChild(s);
+  }, []);
+
   // ─────────────────────────────────────────────────────────────────
-  // ── Main render ───────────────────────────────────────────────────
+  // ── UI Primitives ─────────────────────────────────────────────────
 
-  return (
-    <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#0d1117', overflow:'hidden', fontFamily:"'JetBrains Mono', monospace" }}>
+  const Btn = ({ children, onClick, style, variant = 'ghost', title, className = '' }) => {
+    const base = {
+      border: 'none', cursor: 'pointer', fontFamily: DS.mono,
+      display: 'flex', alignItems: 'center', gap: 5,
+      transition: 'all 0.15s', userSelect: 'none',
+    };
+    const variants = {
+      ghost: { background: 'none', color: DS.text2, borderRadius: 6, padding: '4px 8px', fontSize: 12 },
+      primary: { background: 'linear-gradient(135deg, rgba(0,229,160,0.15), rgba(0,229,160,0.08))', color: DS.green, border: `1px solid rgba(0,229,160,0.25)`, borderRadius: 7, padding: '5px 13px', fontSize: 12, boxShadow: '0 2px 8px rgba(0,229,160,0.1)' },
+      danger: { background: 'rgba(255,82,82,0.08)', color: DS.red, border: `1px solid rgba(255,82,82,0.2)`, borderRadius: 7, padding: '4px 10px', fontSize: 11 },
+      dim: { background: 'rgba(255,255,255,0.04)', color: DS.text2, border: `1px solid ${DS.border2}`, borderRadius: 6, padding: '4px 10px', fontSize: 11 },
+    };
+    return <button onClick={onClick} title={title} className={`gv-btn-hover ${className}`} style={{ ...base, ...variants[variant], ...style }}>{children}</button>;
+  };
 
-      {/* ── Title bar ── */}
-      <div style={{ height:38, background:'#161b22', borderBottom:'1px solid #21262d', display:'flex', alignItems:'center', gap:0, flexShrink:0 }}>
-        {/* Back button */}
-        {onBack && (
-          <button onClick={onBack} style={{ height:'100%', padding:'0 14px', background:'none', border:'none', borderRight:'1px solid #21262d', color:'#8b949e', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6, transition:'background 0.15s' }}
-            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
-            onMouseLeave={e=>e.currentTarget.style.background='none'}
-          >← GitVerse</button>
-        )}
-        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          <span style={{ fontSize:14 }}>💻</span>
-          <span style={{ fontSize:12, color:'#8b949e' }}>GitVerse IDE</span>
-          <span style={{ color:'#30363d' }}>/</span>
-          <span style={{ fontSize:12, color:'#e6edf3' }}>my-project</span>
-          {git.initialized && <>
-            <span style={{ color:'#30363d' }}>on</span>
-            <span style={{ fontSize:11, color:'#00ff88', background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:4, padding:'1px 7px' }}>⎇ {git.HEAD}{git.merging?' | MERGING':''}</span>
-          </>}
-        </div>
-        {/* Panel toggles */}
-        <div style={{ display:'flex', alignItems:'center', gap:2, paddingRight:10 }}>
-          {[['editor','Editor','📝'],['split','Split','⬛'],['terminal','Terminal','⚡']].map(([id,label,icon])=>(
-            <button key={id} onClick={()=>setActivePanel(id)} style={{ background:activePanel===id?'rgba(255,255,255,0.1)':'none', border:'none', color:activePanel===id?'#e6edf3':'#8b949e', borderRadius:5, padding:'3px 10px', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-              <span>{icon}</span><span>{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+  const Tag = ({ children, color = DS.green }) => (
+    <span style={{ fontFamily: DS.mono, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: `${color}14`, color, border: `1px solid ${color}28`, letterSpacing: 0.2, flexShrink: 0 }}>{children}</span>
+  );
 
-      {/* ── Workflow Banner ── */}
-      {currentStep && (
-        <div style={{ background:'#161b22', borderBottom:'1px solid #21262d', padding:'6px 16px', display:'flex', alignItems:'center', gap:6, overflowX:'auto', flexShrink:0 }}>
-          <span style={{ fontSize:10, color:'#8b949e', flexShrink:0, textTransform:'uppercase', letterSpacing:0.5 }}>Workflow:</span>
-          {WORKFLOW_STEPS.map((s,i)=>(
-            <React.Fragment key={s.id}>
-              {i>0 && <span style={{ color:'#21262d', flexShrink:0 }}>→</span>}
-              <button onClick={()=>{ if(s.cmd) { runCommand(s.cmd); setActivePanel('terminal'); }}} style={{
-                background: s.done ? 'rgba(63,185,80,0.1)' : s.id===currentStep.id ? 'rgba(88,166,255,0.12)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${s.done?'rgba(63,185,80,0.3)':s.id===currentStep.id?'rgba(88,166,255,0.3)':'#30363d'}`,
-                color: s.done?'#3fb950':s.id===currentStep.id?'#79c0ff':'#484f58',
-                borderRadius:6, padding:'3px 10px', fontSize:11, cursor:s.cmd?'pointer':'default', flexShrink:0,
-                display:'flex', alignItems:'center', gap:5, transition:'all 0.15s',
-              }}>
-                {s.done ? <span>✓</span> : s.id===currentStep.id ? <span style={{ width:6,height:6,borderRadius:'50%',background:'#79c0ff',animation:'pulse 1.5s infinite' }} /> : null}
-                <span>{s.label}</span>
-              </button>
-            </React.Fragment>
-          ))}
-          <span style={{ marginLeft:8, fontSize:11, color:'#8b949e', flexShrink:0 }}>
-            {currentStep.cmd ? <>Click <strong style={{color:'#79c0ff'}}>{currentStep.label}</strong> or type in terminal</> : currentStep.desc}
-          </span>
-        </div>
-      )}
+  // ─────────────────────────────────────────────────────────────────
+  // ── renderTree (redesigned) ───────────────────────────────────────
 
-      {/* ── Main area ── */}
-      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+  function renderTree(folder, depth = 0) {
+    const children = folderTree[folder] || [];
+    const subfolders = Object.keys(folderTree).filter(f => {
+      if (!f) return false;
+      const pp = folder ? folder.split('/') : [];
+      return f.split('/').length === pp.length + 1 && f.startsWith(folder ? folder + '/' : '');
+    });
 
-        {/* Activity bar */}
-        <div style={{ width:44, background:'#161b22', borderRight:'1px solid #21262d', display:'flex', flexDirection:'column', alignItems:'center', padding:'8px 0', gap:2, flexShrink:0 }}>
-          {[
-            { icon:'📁', title:'Explorer', action:()=>{} },
-            { icon:'🔍', title:'Search', action:()=>{} },
-            { icon:'🌿', title:'Source Control', action:()=>setGhTab('commits') },
-            { icon:'🐙', title:'GitHub', action:()=>setGhTab('code') },
-            { icon:'⚙️', title:'Extensions', action:()=>{} },
-          ].map(item=>(
-            <button key={item.title} title={item.title} onClick={item.action} style={{ width:36,height:36, background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, borderRadius:6, transition:'background 0.1s', color:'#8b949e' }}
-              onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,0.08)';e.currentTarget.style.color='#e6edf3';}}
-              onMouseLeave={e=>{e.currentTarget.style.background='none';e.currentTarget.style.color='#8b949e';}}
-            >{item.icon}</button>
-          ))}
-          <div style={{flex:1}}/>
-          <div style={{ width:4, height:4, borderRadius:'50%', background: git.initialized?'#3fb950':'#f78166', marginBottom:4 }} title={git.initialized?'Repo initialized':'No repo'} />
-        </div>
-
-        {/* File explorer */}
-        <div style={{ width:220, background:'#161b22', borderRight:'1px solid #21262d', display:'flex', flexDirection:'column', flexShrink:0, overflow:'hidden' }}>
-          <div style={{ padding:'8px 12px 4px', fontSize:10, color:'#484f58', textTransform:'uppercase', letterSpacing:1, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-            <span>Explorer</span>
-            <div style={{ display:'flex', gap:3 }}>
-              <button onClick={()=>setNewItemDraft({type:'file',parent:''})} title="New file" style={{ background:'none', border:'none', color:'#8b949e', cursor:'pointer', fontSize:14, padding:'0 2px' }}>+</button>
-              <button onClick={()=>setNewItemDraft({type:'folder',parent:''})} title="New folder" style={{ background:'none', border:'none', color:'#8b949e', cursor:'pointer', fontSize:14, padding:'0 2px' }}>📁</button>
+    return (
+      <div key={folder || 'root'}>
+        {subfolders.map(sf => {
+          const name = sf.split('/').pop();
+          const isOpen = expandedFolders[sf];
+          return (
+            <div key={sf}>
+              <div
+                className="gv-file-row"
+                onClick={() => setExpandedFolders(e => ({ ...e, [sf]: !isOpen }))}
+                onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'folder', path: sf }); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: `4px 10px 4px ${10 + depth * 14}px`, cursor: 'pointer', userSelect: 'none', borderRadius: 5, margin: '0 4px', transition: 'background 0.1s' }}
+              >
+                <span style={{ fontSize: 9, color: DS.text1, minWidth: 10, transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                <span style={{ fontSize: 13 }}>📁</span>
+                <span style={{ fontSize: 12, color: DS.text2, fontFamily: DS.mono }}>{name}</span>
+              </div>
+              {isOpen && renderTree(sf, depth + 1)}
             </div>
+          );
+        })}
+
+        {children.map(p => {
+          const name = p.split('/').pop();
+          const status = statusOf(p);
+          const isActive = activeTab === p;
+          const fc = flashFiles[p];
+          const flashClass = fc === 'green' ? 'gv-flash-g' : fc === 'orange' ? 'gv-flash-o' : fc === 'red' ? 'gv-flash-r' : fc === 'blue' ? 'gv-flash-b' : '';
+          const sColor = STATUS_COLOR[status];
+
+          return (
+            <div
+              key={p}
+              className={`gv-file-row ${flashClass}`}
+              onClick={() => openFile(p)}
+              onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, type: 'file', path: p }); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: `4px 10px 4px ${10 + depth * 14 + 16}px`,
+                cursor: 'pointer', userSelect: 'none',
+                borderRadius: 5, margin: '0 4px', transition: 'background 0.1s',
+                background: isActive ? 'rgba(0,229,160,0.07)' : 'transparent',
+                borderLeft: isActive ? `2px solid ${DS.green}` : '2px solid transparent',
+                marginLeft: isActive ? 4 : 4,
+              }}
+            >
+              <span style={{ fontSize: 13, color: fileColor(name), flexShrink: 0 }}>{fileIcon(name)}</span>
+              {renaming === p ? (
+                <input
+                  autoFocus defaultValue={name}
+                  onBlur={e => { renameFile(p, p.replace(name, e.target.value)); setRenaming(null); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { renameFile(p, p.replace(name, e.target.value)); setRenaming(null); }
+                    if (e.key === 'Escape') setRenaming(null);
+                  }}
+                  onClick={e => e.stopPropagation()}
+                  style={{ flex: 1, background: DS.surface4, border: `1px solid ${DS.green}55`, borderRadius: 4, padding: '1px 6px', color: DS.text1, fontSize: 12, outline: 'none', fontFamily: DS.mono }}
+                />
+              ) : (
+                <span style={{ flex: 1, fontSize: 12, fontFamily: DS.mono, color: sColor || DS.text2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+              )}
+              {status && status !== 'clean' && status !== 'ignored' && (
+                <span style={{ fontSize: 10, color: sColor, fontWeight: 700, fontFamily: DS.mono, flexShrink: 0 }}>{STATUS_LETTER[status]}</span>
+              )}
+            </div>
+          );
+        })}
+
+        {newItemDraft?.parent === folder && (
+          <div style={{ padding: `2px 10px 2px ${10 + depth * 14 + 32}px` }}>
+            <input
+              autoFocus placeholder={newItemDraft.type === 'file' ? 'filename.ext' : 'folder-name'}
+              onBlur={() => setNewItemDraft(null)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const val = e.target.value.trim();
+                  if (!val) { setNewItemDraft(null); return; }
+                  const fp = folder ? `${folder}/${val}` : val;
+                  if (newItemDraft.type === 'file') createFile(fp);
+                  else setExpandedFolders(ev => ({ ...ev, [fp]: true }));
+                  setNewItemDraft(null);
+                }
+                if (e.key === 'Escape') setNewItemDraft(null);
+              }}
+              style={{ width: '90%', background: DS.surface4, border: `1px solid ${DS.green}44`, borderRadius: 4, padding: '2px 7px', color: DS.text1, fontSize: 12, outline: 'none', fontFamily: DS.mono }}
+            />
           </div>
-          <div style={{ fontSize:10, color:'#484f58', padding:'2px 12px 6px', textTransform:'uppercase', letterSpacing:0.5 }}>📁 my-project</div>
-          <div style={{ flex:1, overflow:'auto' }}>
-            {renderTree('')}
+        )}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── renderCommitDiff (redesigned) ────────────────────────────────
+
+  function renderCommitDiff(commit) {
+    const pSnap = commit.parent ? git.commits.find(c => c.hash === commit.parent)?.snapshot || {} : {};
+    const changed = Object.keys({ ...pSnap, ...(commit.snapshot || {}) }).filter(p => pSnap[p] !== (commit.snapshot || {})[p]);
+    if (!changed.length) return <div style={{ padding: 14, color: DS.text1, fontSize: 12, fontFamily: DS.mono }}>No file changes</div>;
+    return (
+      <div>
+        <div style={{ padding: '6px 16px', fontSize: 11, color: DS.text1, fontFamily: DS.mono, borderBottom: `1px solid ${DS.border1}`, display: 'flex', gap: 12 }}>
+          {commit.stats?.added > 0 && <span style={{ color: DS.green }}>+{commit.stats.added} added</span>}
+          {commit.stats?.modified > 0 && <span style={{ color: DS.orange }}>~{commit.stats.modified} changed</span>}
+          {commit.stats?.deleted > 0 && <span style={{ color: DS.red }}>-{commit.stats.deleted} deleted</span>}
+        </div>
+        {changed.slice(0, 5).map(p => {
+          const old = pSnap[p] || '', neu = (commit.snapshot || {})[p] || '';
+          const diff = computeDiff(old, neu);
+          if (!diff.some(d => d.type !== 'ctx')) return null;
+          return (
+            <div key={p}>
+              <div style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.02)', borderBottom: `1px solid ${DS.border1}`, fontSize: 11, color: DS.text1, fontFamily: DS.mono, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ color: fileColor(p) }}>{fileIcon(p)}</span>
+                <span style={{ color: DS.text2 }}>{p}</span>
+                <span style={{ marginLeft: 'auto', color: DS.green }}>+{diff.filter(d => d.type === 'add').length}</span>
+                <span style={{ color: DS.red }}>-{diff.filter(d => d.type === 'del').length}</span>
+              </div>
+              {diff.slice(0, 30).map((d, di) => (
+                <div key={di} style={{ display: 'flex', gap: 10, padding: '1px 14px', background: d.type === 'add' ? 'rgba(0,229,160,0.05)' : d.type === 'del' ? 'rgba(255,82,82,0.05)' : 'transparent', fontFamily: DS.mono, fontSize: 11 }}>
+                  <span style={{ color: DS.text1, minWidth: 24, textAlign: 'right', userSelect: 'none' }}>{d.line}</span>
+                  <span style={{ color: d.type === 'add' ? DS.green : d.type === 'del' ? DS.red : DS.text1, minWidth: 10 }}>{d.type === 'add' ? '+' : d.type === 'del' ? '-' : ' '}</span>
+                  <span style={{ color: d.type === 'add' ? '#a8ffdf' : d.type === 'del' ? '#ffb3b3' : DS.text1 }}>{d.content}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── renderGitHubPanel (redesigned) ───────────────────────────────
+
+  function renderGitHubPanel() {
+    const ghTabs = [
+      { id: 'code',     icon: '⬡', label: 'Code' },
+      { id: 'commits',  icon: '◎', label: 'Commits' },
+      { id: 'branches', icon: '⑂', label: 'Branches' },
+      { id: 'prs',      icon: '↗', label: `PRs${prs.length ? ` · ${prs.length}` : ''}` },
+      { id: 'actions',  icon: '⚡', label: 'CI' },
+    ];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: DS.surface1, borderLeft: `1px solid ${DS.border1}` }}>
+
+        {/* Repo header */}
+        <div style={{ padding: '10px 14px 8px', borderBottom: `1px solid ${DS.border1}`, background: DS.surface2, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 16, filter: 'drop-shadow(0 0 4px rgba(0,229,160,0.4))' }}>🐙</span>
+            <span style={{ fontSize: 12, fontFamily: DS.mono, color: DS.text2 }}>
+              <span style={{ color: DS.blue }}>user</span>
+              <span style={{ color: DS.text1 }}> / </span>
+              <span style={{ color: DS.text1, fontWeight: 700 }}>my-project</span>
+            </span>
+            {git.initialized && (
+              <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: DS.mono, color: DS.green, background: `${DS.green}12`, border: `1px solid ${DS.green}28`, borderRadius: 10, padding: '1px 7px' }}>Public</span>
+            )}
           </div>
-          {/* Status summary */}
+
           {git.initialized && (
-            <div style={{ padding:'5px 12px', borderTop:'1px solid #21262d', background:'#0d1117', display:'flex', gap:10, fontSize:10, color:'#484f58', flexShrink:0 }}>
-              <span style={{color:'#73c6fb'}}>{allPaths.filter(p=>!git.files[p]?.tracked&&!isIgnored(p)).length}U</span>
-              <span style={{color:'#e2c08d'}}>{allPaths.filter(p=>git.files[p]?.tracked&&git.files[p].content!==fs[p]).length}M</span>
-              <span style={{color:'#4caf50'}}>{Object.keys(git.staged).length}S</span>
-              {git.stash?.length>0 && <span style={{color:'#f0883e'}}>{git.stash.length}stash</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: DS.surface3, border: `1px solid ${DS.border2}`, borderRadius: 6, padding: '4px 10px', fontSize: 11, fontFamily: DS.mono, cursor: 'default' }}>
+                <span style={{ color: DS.text1 }}>⑂</span>
+                <span style={{ color: DS.green, fontWeight: 600 }}>{git.HEAD}</span>
+                {git.merging && <span style={{ color: DS.orange, fontSize: 9 }}>MERGING</span>}
+              </div>
+              <span style={{ color: DS.text1, fontSize: 11, fontFamily: DS.mono }}>{git.commits.length} commits</span>
+              {pushProgress !== null && (
+                <div style={{ flex: 1, minWidth: 60, background: DS.surface3, borderRadius: 3, height: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: `linear-gradient(90deg, ${DS.green}, ${DS.cyan})`, width: `${pushProgress}%`, transition: 'width 0.12s', borderRadius: 3, boxShadow: `0 0 6px ${DS.green}` }} />
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* ── Center: Editor + Terminal ── */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
-          {/* Tab bar */}
-          <div style={{ height:35, background:'#0d1117', borderBottom:'1px solid #21262d', display:'flex', alignItems:'stretch', overflow:'hidden', flexShrink:0 }}>
-            {openTabs.map(path=>{
-              const name = path.split('/').pop();
-              const status = statusOf(path);
-              const isActive = activeTab===path && (activePanel==='editor'||activePanel==='split');
-              return (
-                <div key={path} onClick={()=>{setActiveTab(path);setActivePanel(p=>p==='terminal'?'split':p);}} style={{
-                  display:'flex', alignItems:'center', gap:6, padding:'0 14px',
-                  cursor:'pointer', minWidth:0, maxWidth:160, flexShrink:0,
-                  background: isActive?'#1e1e1e':'transparent',
-                  borderRight:'1px solid #21262d',
-                  borderBottom: isActive?'1px solid #1e1e1e':'1px solid transparent',
-                  borderTop: isActive?'1px solid #79c0ff':'1px solid transparent',
-                  fontSize:12, color: isActive?'#e6edf3':'#8b949e',
-                  transition:'all 0.1s',
-                }}>
-                  <span style={{fontSize:12, color:fileColor(name), flexShrink:0}}>{fileIcon(name)}</span>
-                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</span>
-                  {status==='modified' && <span style={{width:7,height:7,borderRadius:'50%',background:'#e3b341',flexShrink:0}}/>}
-                  <span onClick={e=>closeTab(path,e)} style={{color:'#484f58',marginLeft:2,fontSize:15,flexShrink:0,lineHeight:1}}>×</span>
+        {/* Tab bar */}
+        <div style={{ display: 'flex', borderBottom: `1px solid ${DS.border1}`, background: DS.surface2, flexShrink: 0, overflow: 'auto' }}>
+          {ghTabs.map(t => (
+            <button key={t.id} onClick={() => setGhTab(t.id)} className="gv-tab-btn" style={{
+              padding: '8px 12px', border: 'none', cursor: 'pointer',
+              background: ghTab === t.id ? `${DS.green}08` : 'none',
+              borderBottom: ghTab === t.id ? `2px solid ${DS.green}` : '2px solid transparent',
+              color: ghTab === t.id ? DS.text1 : DS.text1,
+              fontFamily: DS.mono, fontSize: 11, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
+            }}>
+              <span style={{ fontSize: 12 }}>{t.icon}</span>{t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div style={{ flex: 1, overflow: 'auto' }}>
+
+          {/* ── CODE ── */}
+          {ghTab === 'code' && (
+            <div>
+              {!git.initialized ? (
+                <div style={{ padding: 32, textAlign: 'center' }}>
+                  <div style={{ fontSize: 44, marginBottom: 14, filter: 'drop-shadow(0 0 12px rgba(0,229,160,0.3))' }}>📦</div>
+                  <div style={{ color: DS.text1, fontSize: 13, marginBottom: 20, fontFamily: DS.mono }}>Repository not initialized</div>
+                  <Btn variant="primary" onClick={() => runCommand('git init')} style={{ margin: '0 auto', fontSize: 13, padding: '8px 20px' }}>
+                    <span>⚡</span> git init
+                  </Btn>
                 </div>
-              );
-            })}
-            {!openTabs.length && (
-              <div style={{ display:'flex', alignItems:'center', padding:'0 16px', color:'#484f58', fontSize:12 }}>No files open — click a file to edit</div>
-            )}
-          </div>
-
-          {/* Editor / Terminal area */}
-          <div style={{ flex:1, display:'flex', flexDirection: activePanel==='split'?'row':'column', overflow:'hidden' }}>
-
-            {/* Editor */}
-            {(activePanel==='editor'||activePanel==='split') && (
-              <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', borderRight:activePanel==='split'?'1px solid #21262d':'none' }}>
-                {activeTab && fs[activeTab]!==undefined ? (
-                  <>
-                    <div style={{ padding:'3px 12px', borderBottom:'1px solid #21262d', background:'#1e1e1e', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                      <span style={{fontSize:12,color:fileColor(activeTab)}}>{fileIcon(activeTab)}</span>
-                      <span style={{fontSize:11,color:'#8b949e'}}>{activeTab}</span>
-                      <span style={{color:'#30363d'}}>·</span>
-                      <span style={{fontSize:10,color:'#484f58',textTransform:'uppercase',letterSpacing:0.5}}>{fileType(activeTab)}</span>
-                      <div style={{flex:1}}/>
-                      {statusOf(activeTab)==='modified' && (
-                        <button onClick={()=>runCommand(`git add ${activeTab}`)} style={{background:'rgba(76,175,80,0.1)',border:'1px solid rgba(76,175,80,0.3)',color:'#4caf50',borderRadius:4,padding:'1px 8px',fontSize:10,cursor:'pointer'}}>+ Stage</button>
-                      )}
-                      {statusOf(activeTab)==='staged' && (
-                        <button onClick={()=>runCommand(`git restore --staged ${activeTab}`)} style={{background:'rgba(226,192,141,0.1)',border:'1px solid rgba(226,192,141,0.3)',color:'#e2c08d',borderRadius:4,padding:'1px 8px',fontSize:10,cursor:'pointer'}}>Unstage</button>
-                      )}
-                    </div>
-                    <SyntaxHighlightedEditor
-                      value={fs[activeTab]}
-                      onChange={val=>saveFile(activeTab,val)}
-                      fileType={fileType(activeTab)}
-                      onKeyDown={e=>{
-                        if (e.key==='Tab') {
-                          e.preventDefault();
-                          const ta = e.target;
-                          const s=ta.selectionStart, en=ta.selectionEnd;
-                          const val = ta.value.substring(0,s)+'  '+ta.value.substring(en);
-                          saveFile(activeTab, val);
-                          requestAnimationFrame(()=>{ ta.selectionStart=ta.selectionEnd=s+2; });
-                        }
-                      }}
-                    />
-                  </>
-                ) : (
-                  <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:12, color:'#484f58', background:'#1e1e1e' }}>
-                    <span style={{fontSize:56}}>📝</span>
-                    <span style={{fontSize:14}}>Open a file from the explorer</span>
-                    <span style={{fontSize:12}}>or right-click to create one</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Terminal */}
-            {(activePanel==='terminal'||activePanel==='split') && (
-              <div style={{ flex: activePanel==='split'?'0 0 380px':1, display:'flex', flexDirection:'column', background:'#0d1117', borderTop:activePanel!=='split'?'1px solid #21262d':'none', overflow:'hidden' }}>
-                <div style={{ padding:'5px 14px', borderBottom:'1px solid #21262d', background:'#161b22', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                  <span style={{color:'#3fb950',fontSize:12}}>⚡</span>
-                  <span style={{fontSize:11,color:'#484f58'}}>TERMINAL</span>
-                  {git.initialized && <span style={{fontSize:11,color:'#8b949e'}}> · {git.HEAD}{git.merging?' (MERGING)':''}</span>}
-                  <div style={{flex:1}}/>
-                  <button onClick={clearLines} style={{background:'none',border:'none',color:'#484f58',fontSize:11,cursor:'pointer',padding:'0 4px'}}>clear</button>
-                </div>
-                <div ref={termBodyRef} style={{ flex:1, overflow:'auto', padding:'10px 14px 4px' }}>
-                  {termLines.map((l,i)=><div key={l.id||i}>{renderTermLine(l)}</div>)}
-                  {/* Inline commit editor */}
-                  {showCommitBox && (
-                    <div style={{ margin:'8px 0', background:'#161b22', border:'1px solid #30363d', borderRadius:8, padding:12 }}>
-                      <div style={{fontSize:11,color:'#8b949e',marginBottom:6,fontFamily:"'JetBrains Mono',monospace"}}>Enter commit message:</div>
-                      <textarea
-                        autoFocus value={commitMsgDraft} onChange={e=>setCommitMsgDraft(e.target.value)}
-                        onKeyDown={e=>{
-                          if (e.key==='Enter'&&!e.shiftKey) {
-                            e.preventDefault();
-                            if (commitMsgDraft.trim()) {
-                              runCommand(`git commit -m "${commitMsgDraft.trim()}"`);
-                              setCommitMsgDraft(''); setShowCommitBox(false);
-                            }
-                          }
-                          if (e.key==='Escape') { setShowCommitBox(false); setCommitMsgDraft(''); }
-                        }}
-                        placeholder="Short, imperative summary..."
-                        style={{ width:'100%', background:'#0d1117', border:'1px solid #30363d', borderRadius:5, padding:'6px 10px', color:'#e6edf3', fontSize:12, resize:'none', height:60, outline:'none', fontFamily:"'JetBrains Mono',monospace", boxSizing:'border-box' }}
-                      />
-                      <div style={{ display:'flex', gap:8, marginTop:8 }}>
-                        <button onClick={()=>{ if(commitMsgDraft.trim()){ runCommand(`git commit -m "${commitMsgDraft.trim()}"`); setCommitMsgDraft(''); setShowCommitBox(false); }}} style={{background:'rgba(63,185,80,0.15)',border:'1px solid rgba(63,185,80,0.4)',color:'#3fb950',borderRadius:6,padding:'5px 14px',fontSize:11,cursor:'pointer'}}>Commit (Enter)</button>
-                        <button onClick={()=>{setShowCommitBox(false);setCommitMsgDraft('');}} style={{background:'none',border:'1px solid #30363d',color:'#8b949e',borderRadius:6,padding:'5px 10px',fontSize:11,cursor:'pointer'}}>Cancel (Esc)</button>
+              ) : (
+                <>
+                  {Object.keys(folderTree).filter(f => f === (ghBrowsePath || '')).map(folder => {
+                    const children = folderTree[folder] || [];
+                    const subfolders = Object.keys(folderTree).filter(f2 => {
+                      if (!f2) return false;
+                      const pp = folder ? folder.split('/') : [];
+                      return f2.split('/').length === pp.length + 1 && f2.startsWith(folder ? folder + '/' : '');
+                    });
+                    const lastC = git.commits.slice(-1)[0];
+                    return (
+                      <div key={folder}>
+                        {ghBrowsePath && (
+                          <div onClick={() => setGhBrowsePath(ghBrowsePath.split('/').slice(0, -1).join('/'))} className="gv-gh-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: `1px solid ${DS.border1}`, cursor: 'pointer', fontSize: 12, color: DS.blue, fontFamily: DS.mono }}>
+                            <span>←</span> ..
+                          </div>
+                        )}
+                        {subfolders.map(sf => (
+                          <div key={sf} onClick={() => setGhBrowsePath(sf)} className="gv-gh-row" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderBottom: `1px solid ${DS.border1}`, cursor: 'pointer', transition: 'background 0.1s' }}>
+                            <span>📁</span>
+                            <span style={{ flex: 1, fontSize: 13, color: DS.blue, fontFamily: DS.mono }}>{sf.split('/').pop()}</span>
+                            <span style={{ color: DS.text1, fontSize: 11, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: DS.mono }}>{lastC?.msg || ''}</span>
+                            <span style={{ color: DS.text1, fontSize: 10, flexShrink: 0, fontFamily: DS.mono }}>{timeAgo(lastC?.date || Date.now())}</span>
+                          </div>
+                        ))}
+                        {children.map(p => {
+                          const lc = git.commits.slice().reverse().find(c => c.snapshot?.[p]);
+                          return (
+                            <div key={p} onClick={() => openFile(p)} className="gv-gh-row" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderBottom: `1px solid ${DS.border1}`, cursor: 'pointer', transition: 'background 0.1s' }}>
+                              <span style={{ color: fileColor(p.split('/').pop()) }}>{fileIcon(p.split('/').pop())}</span>
+                              <span style={{ flex: 1, fontSize: 13, color: '#d4e8ff', fontFamily: DS.mono }}>{p.split('/').pop()}</span>
+                              <span style={{ color: DS.text1, fontSize: 11, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: DS.mono }}>{lc?.msg || '—'}</span>
+                              <span style={{ color: DS.text1, fontSize: 10, flexShrink: 0, fontFamily: DS.mono }}>{lc ? timeAgo(lc.date) : '—'}</span>
+                            </div>
+                          );
+                        })}
                       </div>
+                    );
+                  })}
+                  {fs['README.md'] && (
+                    <div style={{ padding: 14, borderTop: `1px solid ${DS.border1}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${DS.border1}` }}>
+                        <span>📝</span><span style={{ color: DS.text2, fontSize: 12, fontFamily: DS.mono }}>README.md</span>
+                      </div>
+                      <pre style={{ color: DS.text2, fontSize: 12, fontFamily: DS.mono, whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0 }}>{fs['README.md']}</pre>
                     </div>
                   )}
-                  {/* Cursor */}
-                  <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
-                    <span style={{ color:'#3fb950', fontSize:12, fontFamily:"'JetBrains Mono',monospace" }}>{git.initialized?`(${git.HEAD}) $`:' $'}</span>
-                    <span style={{ width:7, height:14, background:'#aeafad', display:'inline-block', animation:'blink 1s step-end infinite' }} />
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── COMMITS ── */}
+          {ghTab === 'commits' && (
+            <div>
+              {!reachableCommits.length ? (
+                <div style={{ padding: 24, textAlign: 'center', color: DS.text1, fontSize: 12, fontFamily: DS.mono }}>No commits yet — run git init then commit</div>
+              ) : reachableCommits.map((c, i) => {
+                const bLabels = Object.entries(git.branches).filter(([, h]) => h === c.hash).map(([b]) => b);
+                const tLabels = Object.entries(git.tags || {}).filter(([, h]) => h === c.hash).map(([t]) => t);
+                const isSel = selectedCommit?.hash === c.hash;
+                return (
+                  <div key={c.hash} className="gv-pop-in">
+                    <div onClick={() => setSelectedCommit(isSel ? null : c)} className="gv-commit-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px', borderBottom: `1px solid ${DS.border1}`, cursor: 'pointer', background: isSel ? `${DS.green}05` : 'transparent', transition: 'background 0.1s' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 2 }}>
+                        <div style={{ width: 11, height: 11, borderRadius: '50%', background: i === 0 ? DS.green : DS.surface4, border: `2px solid ${i === 0 ? DS.green : DS.border3}`, flexShrink: 0, boxShadow: i === 0 ? `0 0 8px ${DS.green}60` : 'none' }} />
+                        {i < reachableCommits.length - 1 && <div style={{ width: 1, height: 28, background: DS.border2, marginTop: 3 }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 3 }}>
+                          {bLabels.map(b => <Tag key={b} color={b === git.HEAD ? DS.green : DS.blue}>{b === git.HEAD ? `HEAD→${b}` : b}</Tag>)}
+                          {tLabels.map(t => <Tag key={t} color={DS.orange}>🏷 {t}</Tag>)}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#d8eaff', fontFamily: DS.mono, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{c.msg}</div>
+                        <div style={{ fontSize: 10, color: DS.text1, display: 'flex', gap: 8, fontFamily: DS.mono }}>
+                          <span>{c.author}</span>
+                          <span style={{ color: DS.text1 }}>{c.hash.slice(0, 7)}</span>
+                          <span>{timeAgo(c.date)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {isSel && <div style={{ borderBottom: `1px solid ${DS.border1}`, background: DS.bg }}>{renderCommitDiff(c)}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── BRANCHES ── */}
+          {ghTab === 'branches' && (
+            <div style={{ padding: 12 }}>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 }}>New branch from {git.HEAD}</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input value={newBranchInput} onChange={e => setNewBranchInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && newBranchInput) { runCommand(`git switch -c ${newBranchInput}`); setNewBranchInput(''); } }}
+                    placeholder="branch-name"
+                    style={{ flex: 1, background: DS.surface3, border: `1px solid ${DS.border2}`, borderRadius: 7, padding: '7px 10px', color: DS.text1, fontFamily: DS.mono, fontSize: 12, outline: 'none', transition: 'border 0.15s' }}
+                    onFocus={e => e.target.style.borderColor = `${DS.green}55`}
+                    onBlur={e => e.target.style.borderColor = DS.border2}
+                  />
+                  <Btn variant="primary" onClick={() => { if (newBranchInput) { runCommand(`git switch -c ${newBranchInput}`); setNewBranchInput(''); } }}>Create</Btn>
+                </div>
+              </div>
+              {Object.entries(git.branches).map(([name, hash]) => {
+                const isActive = name === git.HEAD;
+                const c = hash ? git.commits.find(x => x.hash === hash) : null;
+                const isPushed = git.remotes?.origin?.pushed?.[name] === hash;
+                return (
+                  <div key={name} style={{ padding: '10px 12px', borderRadius: 9, marginBottom: 6, background: isActive ? `${DS.green}06` : DS.surface2, border: `1px solid ${isActive ? `${DS.green}28` : DS.border1}`, transition: 'all 0.15s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? DS.green : DS.text1, boxShadow: isActive ? `0 0 6px ${DS.green}` : 'none', flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: DS.mono, fontSize: 12, color: isActive ? DS.green : '#c8ddf8', fontWeight: isActive ? 600 : 400 }}>{name}</span>
+                          {isActive && <Tag color={DS.green}>current</Tag>}
+                          {isPushed && <Tag color={DS.text1}>↑ synced</Tag>}
+                        </div>
+                        {c && <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.hash.slice(0, 7)} {c.msg}</div>}
+                      </div>
+                      {!isActive && <Btn variant="dim" onClick={() => runCommand(`git switch ${name}`)} style={{ fontSize: 10, padding: '3px 9px' }}>Switch</Btn>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── PRs ── */}
+          {ghTab === 'prs' && (
+            <div style={{ padding: 12 }}>
+              <Btn variant="primary" onClick={() => setPrDraft({ title: '', body: '', from: git.HEAD, to: 'main' })} style={{ width: '100%', justifyContent: 'center', marginBottom: 12, padding: '8px' }}>
+                <span>+</span> New pull request
+              </Btn>
+              {prDraft && (
+                <div className="gv-slide-in" style={{ background: DS.surface2, borderRadius: 10, border: `1px solid ${DS.border2}`, padding: 14, marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: DS.orange }}>{prDraft.from}</span><span>→</span><span style={{ color: DS.blue }}>{prDraft.to}</span>
+                  </div>
+                  <input value={prDraft.title} onChange={e => setPrDraft(p => ({ ...p, title: e.target.value }))} placeholder="Pull request title"
+                    style={{ width: '100%', background: DS.surface3, border: `1px solid ${DS.border2}`, borderRadius: 7, padding: '8px 10px', color: DS.text1, fontSize: 13, marginBottom: 8, outline: 'none', boxSizing: 'border-box', fontFamily: DS.ui }}
+                    onFocus={e => e.target.style.borderColor = `${DS.blue}55`}
+                    onBlur={e => e.target.style.borderColor = DS.border2}
+                  />
+                  <textarea value={prDraft.body} onChange={e => setPrDraft(p => ({ ...p, body: e.target.value }))} placeholder="Describe your changes..."
+                    style={{ width: '100%', background: DS.surface3, border: `1px solid ${DS.border2}`, borderRadius: 7, padding: '8px 10px', color: DS.text1, fontSize: 12, height: 70, resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: DS.ui }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <Btn variant="primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => {
+                      if (!prDraft.title.trim()) return;
+                      setPrs(p => [...p, { ...prDraft, id: Date.now(), status: 'open', date: new Date().toISOString(), number: prs.length + 1 }]);
+                      setPrDraft(null);
+                      if (onXP) onXP(20, 'Pull Request opened');
+                    }}>Create pull request</Btn>
+                    <Btn variant="dim" onClick={() => setPrDraft(null)}>Cancel</Btn>
                   </div>
                 </div>
-                <div style={{ padding:'6px 14px', borderTop:'1px solid #21262d', background:'#161b22', display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                  <span style={{ color:'#3fb950', fontSize:13, flexShrink:0 }}>{git.initialized?`(${git.HEAD}) $`:' $'}</span>
-                  <input
-                    ref={termInputRef}
-                    value={termInput}
-                    onChange={e=>setTermInput(e.target.value)}
-                    onKeyDown={e=>{
-                      if (e.key==='Enter') { runCommand(termInput); setTermInput(''); }
-                      else if (e.key==='ArrowUp') { e.preventDefault(); setHistIdx(i=>{ const n=Math.min(i+1,termHistory.length-1); setTermInput(termHistory[n]||''); return n; }); }
-                      else if (e.key==='ArrowDown') { e.preventDefault(); setHistIdx(i=>{ const n=Math.max(i-1,-1); setTermInput(n===-1?'':termHistory[n]||''); return n; }); }
-                    }}
-                    placeholder="Type git commands here..."
-                    autoFocus
-                    style={{ flex:1, background:'none', border:'none', outline:'none', color:'#e6edf3', fontFamily:"'JetBrains Mono',monospace", fontSize:13, caretColor:'#aeafad' }}
-                  />
+              )}
+              {!prs.length && !prDraft && (
+                <div style={{ textAlign: 'center', padding: 28, color: DS.text1, fontSize: 12, fontFamily: DS.mono }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>↗</div>No pull requests yet
                 </div>
+              )}
+              {prs.map(pr => (
+                <div key={pr.id} onClick={() => setActivePR(activePR?.id === pr.id ? null : pr)}
+                  style={{ padding: '11px 13px', borderRadius: 10, border: `1px solid ${pr.status === 'merged' ? `${DS.purple}33` : pr.status === 'closed' ? DS.border1 : `${DS.green}25`}`, marginBottom: 8, cursor: 'pointer', background: activePR?.id === pr.id ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'all 0.15s' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                    <span style={{ fontSize: 14 }}>{pr.status === 'merged' ? '🟣' : pr.status === 'closed' ? '🔴' : '🟢'}</span>
+                    <span style={{ fontSize: 13, color: '#e2f0ff', fontWeight: 600, flex: 1, fontFamily: DS.ui }}>{pr.title}</span>
+                    <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>#{pr.number}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono }}>{pr.from} → {pr.to} · {timeAgo(pr.date)}</div>
+                  {activePR?.id === pr.id && pr.status === 'open' && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }} onClick={e => e.stopPropagation()}>
+                      <Btn variant="primary" style={{ background: `${DS.purple}18`, color: DS.purple, borderColor: `${DS.purple}33` }} onClick={() => { runCommand(`git merge ${pr.from}`); setPrs(p => p.map(x => x.id === pr.id ? { ...x, status: 'merged' } : x)); setActivePR(null); }}>Merge PR</Btn>
+                      <Btn variant="dim" onClick={() => setPrs(p => p.map(x => x.id === pr.id ? { ...x, status: 'closed' } : x))}>Close</Btn>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── ACTIONS (CI) ── */}
+          {ghTab === 'actions' && (
+            <div style={{ padding: 14 }}>
+              <div style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Recent Workflow Runs</div>
+              {!git.commits.length ? (
+                <div style={{ textAlign: 'center', color: DS.text1, fontSize: 12, fontFamily: DS.mono, padding: 20 }}>Push a commit to trigger workflows</div>
+              ) : git.commits.slice(-5).reverse().map(c => {
+                const pass = Math.random() > 0.25;
+                return (
+                  <div key={c.hash} style={{ padding: '9px 11px', borderRadius: 8, border: `1px solid ${DS.border1}`, marginBottom: 7, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 16 }}>{pass ? '✅' : '❌'}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: DS.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: DS.mono }}>{c.msg}</div>
+                      <div style={{ fontSize: 10, color: DS.text1, marginTop: 2, fontFamily: DS.mono }}>CI / {c.hash.slice(0, 7)} · {timeAgo(c.date)}</div>
+                    </div>
+                    <span style={{ fontSize: 11, color: pass ? DS.green : DS.red, fontWeight: 700, fontFamily: DS.mono }}>{pass ? 'passed' : 'failed'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── Terminal line renderer (redesigned) ──────────────────────────
+
+  function renderTermLine(item) {
+    const base = { fontFamily: DS.mono, fontSize: 12.5, whiteSpace: 'pre-wrap', lineHeight: 1.55, marginBottom: 3, wordBreak: 'break-word' };
+    if (item.type === 'welcome') return <div style={{ ...base, color: DS.green, paddingLeft: 10, borderLeft: `2px solid ${DS.green}50`, marginBottom: 10, opacity: 0.9 }}>{item.text}</div>;
+    if (item.type === 'input') return <div style={{ ...base, color: DS.cyan, letterSpacing: 0.2 }}>{item.text}</div>;
+    if (item.type === 'error') return <div style={{ ...base, color: DS.red }}>{item.text}</div>;
+    if (item.type === 'success') return <div style={{ ...base, color: DS.green }}>{item.text}</div>;
+    if (item.type === 'muted') return <div style={{ ...base, color: DS.text1, fontStyle: 'italic' }}>{item.text}</div>;
+    if (item.type === 'help') return <div style={{ ...base, color: DS.blue, fontSize: 11, lineHeight: 1.7 }}>{item.text}</div>;
+    return (
+      <div style={{ ...base, color: '#9db8d8' }}
+        dangerouslySetInnerHTML={{
+          __html: (item.text || '')
+            .replace(/\x1b\[33m(.*?)\x1b\[0m/g, `<span style="color:${DS.yellow}">$1</span>`)
+            .replace(/\x1b\[32m(.*?)\x1b\[0m/g, `<span style="color:${DS.green}">$1</span>`)
+            .replace(/\x1b\[31m(.*?)\x1b\[0m/g, `<span style="color:${DS.red}">$1</span>`)
+            .replace(/\x1b\[90m(.*?)\x1b\[0m/g, `<span style="color:${DS.text1}">$1</span>`)
+            .replace(/\x1b\[1m(.*?)\x1b\[0m/g, '<strong>$1</strong>')
+            .replace(/\x1b\[0m/g, '')
+        }}
+      />
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── Workflow steps ────────────────────────────────────────────────
+
+  const WORKFLOW_STEPS = [
+    { id: 0, label: 'git init',   cmd: 'git init',               done: git.initialized },
+    { id: 1, label: 'Edit files', cmd: null,                      done: workflowStep >= 1 },
+    { id: 2, label: 'git add .',  cmd: 'git add .',               done: workflowStep >= 2 || Object.keys(git.staged).length > 0 },
+    { id: 3, label: 'git commit', cmd: 'git commit -m "my changes"', done: workflowStep >= 3 || git.commits.length > 0 },
+    { id: 4, label: 'git push',   cmd: 'git push',                done: workflowStep >= 4 },
+  ];
+  const currentStep = WORKFLOW_STEPS.find(s => !s.done);
+
+  // ─────────────────────────────────────────────────────────────────
+  // ── MAIN RENDER ───────────────────────────────────────────────────
+
+  const showGitHub = !isMobile && (!isTablet || activePanel !== 'split');
+  const editorWidth = isTablet ? '100%' : showGitHub ? undefined : '100%';
+
+  return (
+    <div className="gv-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: DS.bg, overflow: 'hidden', fontFamily: DS.ui, position: 'relative' }}>
+
+      {/* ── Ambient aurora background ── */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-20%', left: '10%', width: '40%', height: '50%', background: 'radial-gradient(ellipse, rgba(0,229,160,0.03) 0%, transparent 70%)', animation: 'gv-aurora 12s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '5%', width: '35%', height: '40%', background: 'radial-gradient(ellipse, rgba(0,212,255,0.025) 0%, transparent 70%)', animation: 'gv-aurora 16s ease-in-out infinite reverse' }} />
+      </div>
+
+      {/* ── Title bar ── */}
+      <div style={{ height: 40, background: `${DS.surface2}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${DS.border1}`, display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0, zIndex: 10, position: 'relative' }}>
+        {onBack && (
+          <button onClick={onBack} className="gv-nav-btn" style={{ height: '100%', padding: '0 16px', background: 'none', border: 'none', borderRight: `1px solid ${DS.border1}`, color: DS.text1, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, transition: 'all 0.15s', fontFamily: DS.mono }}>
+            <span style={{ fontSize: 14 }}>←</span>
+            {!isMobile && 'GitVerse'}
+          </button>
+        )}
+
+        {/* Logo */}
+        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 15, filter: `drop-shadow(0 0 6px ${DS.green}80)` }}>💻</span>
+          {!isMobile && <span style={{ fontSize: 12, fontFamily: DS.mono, color: DS.text2 }}>
+            <span style={{ color: DS.text1 }}>gitverse /</span> <span style={{ color: DS.text1, fontWeight: 600 }}>my-project</span>
+          </span>}
+          {git.initialized && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: DS.surface3, border: `1px solid ${DS.green}30`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontFamily: DS.mono }}>
+              <span style={{ color: DS.text1 }}>⑂</span>
+              <span style={{ color: DS.green }}>{git.HEAD}</span>
+              {git.merging && <span style={{ color: DS.orange, fontSize: 9 }}>MERGING</span>}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Panel toggles */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '0 10px' }}>
+          {isMobile ? (
+            <>
+              {/* Mobile: hamburger for explorer + tabs for editor/terminal/github */}
+              <button onClick={() => setExplorerOpen(o => !o)} style={{ background: explorerOpen ? `${DS.green}18` : 'none', border: `1px solid ${explorerOpen ? `${DS.green}40` : 'transparent'}`, color: explorerOpen ? DS.green : DS.text1, borderRadius: 6, padding: '5px 9px', fontSize: 16, cursor: 'pointer', transition: 'all 0.15s' }} title="Toggle Explorer">
+                ☰
+              </button>
+              <div style={{ width: 1, height: 18, background: DS.border2, margin: '0 3px' }} />
+              {[['editor','📝','Editor'],['terminal','⚡','Term'],['github','🐙','GitHub']].map(([id, icon, label]) => (
+                <button key={id} onClick={() => setMobileDrawer(id)}
+                  style={{ background: mobileDrawer === id ? `${DS.green}18` : 'none', border: `1px solid ${mobileDrawer === id ? `${DS.green}40` : 'transparent'}`, color: mobileDrawer === id ? DS.green : DS.text1, borderRadius: 6, padding: '5px 9px', fontSize: 15, cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {icon}
+                </button>
+              ))}
+            </>
+          ) : (
+            [['editor','Editor'],['split','Split'],['terminal','Term']].map(([id, label]) => (
+              <button key={id} onClick={() => setActivePanel(id)}
+                style={{ background: activePanel === id ? `${DS.green}18` : 'none', border: `1px solid ${activePanel === id ? `${DS.green}40` : 'transparent'}`, color: activePanel === id ? DS.green : DS.text1, borderRadius: 6, padding: '4px 11px', fontSize: 11, cursor: 'pointer', fontFamily: DS.mono, transition: 'all 0.15s' }}>
+                {label}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ── Workflow banner ── */}
+      {currentStep && (
+        <div style={{ background: `${DS.surface2}cc`, backdropFilter: 'blur(8px)', borderBottom: `1px solid ${DS.border1}`, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', flexShrink: 0, zIndex: 9, position: 'relative' }}>
+          <span style={{ fontSize: 10, color: DS.text1, flexShrink: 0, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 0.8 }}>Workflow</span>
+          <div style={{ width: 1, height: 14, background: DS.border2, flexShrink: 0 }} />
+          {WORKFLOW_STEPS.map((s, i) => (
+            <React.Fragment key={s.id}>
+              {i > 0 && <span style={{ color: DS.border3, flexShrink: 0, fontSize: 10 }}>›</span>}
+              <button onClick={() => { if (s.cmd) { runCommand(s.cmd); setActivePanel('terminal'); } }}
+                className={s.id === currentStep.id ? 'gv-workflow-step-active' : ''}
+                style={{ background: s.done ? `${DS.green}10` : s.id === currentStep.id ? `${DS.blue}12` : 'none', border: `1px solid ${s.done ? `${DS.green}30` : s.id === currentStep.id ? `${DS.blue}35` : DS.border1}`, color: s.done ? DS.green : s.id === currentStep.id ? DS.blue : DS.text1, borderRadius: 6, padding: '3px 10px', fontSize: 11, cursor: s.cmd ? 'pointer' : 'default', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, fontFamily: DS.mono, transition: 'all 0.15s' }}>
+                {s.done ? <span>✓</span> : s.id === currentStep.id ? <div className="gv-wf-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: DS.blue }} /> : null}
+                {s.label}
+              </button>
+            </React.Fragment>
+          ))}
+          {!isMobile && currentStep.cmd && (
+            <span style={{ color: DS.text1, fontSize: 11, fontFamily: DS.mono, flexShrink: 0, marginLeft: 4 }}>← click or type in terminal</span>
+          )}
+        </div>
+      )}
+
+      {/* ── Main content area ── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+
+        {/* ── Activity bar ── */}
+        {!isMobile && (
+          <div style={{ width: 46, background: `${DS.surface2}ee`, backdropFilter: 'blur(8px)', borderRight: `1px solid ${DS.border1}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', gap: 2, flexShrink: 0 }}>
+            {[
+              { icon: '📁', tip: 'Explorer' },
+              { icon: '⑂',  tip: 'Source Control', action: () => setGhTab('commits') },
+              { icon: '🐙', tip: 'GitHub', action: () => setGhTab('code') },
+              { icon: '⚡', tip: 'Terminal', action: () => setActivePanel('terminal') },
+            ].map(item => (
+              <button key={item.tip} title={item.tip} onClick={item.action} className="gv-nav-btn"
+                style={{ width: 34, height: 34, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, borderRadius: 7, transition: 'all 0.15s', color: DS.text2 }}>
+                {item.icon}
+              </button>
+            ))}
+            <div style={{ flex: 1 }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: git.initialized ? DS.green : DS.red, boxShadow: git.initialized ? `0 0 8px ${DS.green}` : 'none', marginBottom: 4, transition: 'all 0.3s' }} title={git.initialized ? 'Repo initialized' : 'No repo'} />
+          </div>
+        )}
+
+        {/* ── Mobile explorer overlay ── */}
+        {isMobile && explorerOpen && (
+          <div onClick={() => setExplorerOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 50, backdropFilter: 'blur(4px)' }} />
+        )}
+
+        {/* ── File explorer (desktop: always visible | mobile: slide-in drawer) ── */}
+        {(!isMobile || explorerOpen) && (
+          <div style={{
+            width: isTablet ? 200 : 224,
+            background: `${DS.surface1}fa`, backdropFilter: 'blur(12px)',
+            borderRight: `1px solid ${DS.border1}`,
+            display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden',
+            // Mobile: fixed overlay drawer
+            ...(isMobile ? {
+              position: 'fixed', left: 0, top: 40, bottom: 0,
+              width: '72vw', maxWidth: 280, zIndex: 51,
+              borderRight: `1px solid ${DS.border2}`,
+              boxShadow: `4px 0 32px rgba(0,0,0,0.8), 0 0 0 1px ${DS.border2}`,
+              animation: 'gv-slide-in 0.2s ease',
+            } : {}),
+          }}>
+            {/* Explorer header */}
+            <div style={{ padding: '8px 12px 5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderBottom: `1px solid ${DS.border1}` }}>
+              <span style={{ fontSize: 10, color: DS.text1, textTransform: 'uppercase', letterSpacing: 1, fontFamily: DS.mono }}>Explorer</span>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <Btn onClick={() => setNewItemDraft({ type: 'file', parent: '' })} title="New file" style={{ padding: '2px 6px', fontSize: 14, color: DS.text1 }}>+</Btn>
+                <Btn onClick={() => setNewItemDraft({ type: 'folder', parent: '' })} title="New folder" style={{ padding: '2px 6px', fontSize: 12 }}>📁</Btn>
+              </div>
+            </div>
+            <div style={{ padding: '4px 8px 3px', fontSize: 10, color: DS.text1, fontFamily: DS.mono, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ fontSize: 12 }}>📂</span> my-project
+            </div>
+
+            {/* File tree */}
+            <div style={{ flex: 1, overflow: 'auto', paddingBottom: 8 }}>
+              {renderTree('')}
+            </div>
+
+            {/* Status footer */}
+            {git.initialized && (
+              <div style={{ padding: '5px 12px', borderTop: `1px solid ${DS.border1}`, background: DS.surface2, display: 'flex', gap: 10, fontSize: 10, fontFamily: DS.mono, flexShrink: 0 }}>
+                {allPaths.filter(p => !git.files[p]?.tracked && !isIgnored(p)).length > 0 && <span style={{ color: DS.blue }}>{allPaths.filter(p => !git.files[p]?.tracked && !isIgnored(p)).length}U</span>}
+                {allPaths.filter(p => git.files[p]?.tracked && git.files[p].content !== fs[p]).length > 0 && <span style={{ color: DS.orange }}>{allPaths.filter(p => git.files[p]?.tracked && git.files[p].content !== fs[p]).length}M</span>}
+                {Object.keys(git.staged).length > 0 && <span style={{ color: DS.green }}>{Object.keys(git.staged).length}S</span>}
+                {git.stash?.length > 0 && <span style={{ color: DS.yellow }}>{git.stash.length} stash</span>}
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* GitHub panel */}
-        <div style={{ width:340, flexShrink:0, overflow:'hidden' }}>
-          {renderGitHubPanel()}
-        </div>
+        {/* ── Center: Editor + Terminal ── */}
+        {(!isMobile || mobileDrawer === 'editor' || mobileDrawer === 'terminal') && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+
+            {/* Tab bar */}
+            {(activePanel === 'editor' || activePanel === 'split' || (isMobile && mobileDrawer === 'editor')) && (
+              <div style={{ height: 36, background: `${DS.surface2}f0`, borderBottom: `1px solid ${DS.border1}`, display: 'flex', alignItems: 'stretch', overflow: 'hidden', flexShrink: 0 }}>
+                {openTabs.map(path => {
+                  const name = path.split('/').pop();
+                  const status = statusOf(path);
+                  const isActive = activeTab === path;
+                  return (
+                    <div key={path} onClick={() => { setActiveTab(path); setActivePanel(p => p === 'terminal' ? 'split' : p); }}
+                      className="gv-tab-btn"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', cursor: 'pointer', minWidth: 0, maxWidth: 160, flexShrink: 0, borderRight: `1px solid ${DS.border1}`, fontSize: 12, fontFamily: DS.mono, color: isActive ? DS.text1 : DS.text1, background: isActive ? `${DS.surface3}` : 'transparent', borderBottom: isActive ? `2px solid ${DS.green}` : `2px solid transparent`, borderTop: isActive ? `1px solid ${DS.border2}` : '1px solid transparent', transition: 'all 0.12s' }}>
+                      <span style={{ fontSize: 12, color: fileColor(name), flexShrink: 0 }}>{fileIcon(name)}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                      {status === 'modified' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: DS.orange, flexShrink: 0 }} />}
+                      {status === 'staged' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: DS.green, flexShrink: 0 }} />}
+                      <span onClick={e => closeTab(path, e)} style={{ color: DS.text1, marginLeft: 2, fontSize: 16, lineHeight: 1, flexShrink: 0, borderRadius: 3, padding: '0 2px', transition: 'color 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = DS.text1}
+                        onMouseLeave={e => e.currentTarget.style.color = DS.text1}>×</span>
+                    </div>
+                  );
+                })}
+                {!openTabs.length && <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', color: DS.text1, fontSize: 12, fontFamily: DS.mono }}>Open a file to start editing</div>}
+              </div>
+            )}
+
+            {/* Editor / Terminal split */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: activePanel === 'split' ? 'row' : 'column', overflow: 'hidden' }}>
+
+              {/* Editor */}
+              {(activePanel === 'editor' || activePanel === 'split' || (isMobile && mobileDrawer === 'editor')) && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: activePanel === 'split' ? `1px solid ${DS.border1}` : 'none' }}>
+                  {activeTab && fs[activeTab] !== undefined ? (
+                    <>
+                      {/* Editor toolbar */}
+                      <div style={{ padding: '3px 12px', borderBottom: `1px solid ${DS.border1}`, background: DS.surface2, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, color: fileColor(activeTab) }}>{fileIcon(activeTab)}</span>
+                        <span style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono }}>{activeTab}</span>
+                        <div style={{ flex: 1 }} />
+                        {statusOf(activeTab) === 'modified' && (
+                          <Btn variant="primary" onClick={() => runCommand(`git add ${activeTab}`)} style={{ fontSize: 10, padding: '2px 9px', gap: 4 }}>
+                            <span>+</span> Stage
+                          </Btn>
+                        )}
+                        {statusOf(activeTab) === 'staged' && (
+                          <Btn onClick={() => runCommand(`git restore --staged ${activeTab}`)} style={{ fontSize: 10, padding: '2px 9px', color: DS.orange, background: `${DS.orange}10`, border: `1px solid ${DS.orange}28`, borderRadius: 6 }}>
+                            Unstage
+                          </Btn>
+                        )}
+                        <span style={{ fontSize: 10, color: DS.text1, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 0.5 }}>{fileType(activeTab)}</span>
+                      </div>
+                      <SyntaxHighlightedEditor
+                        value={fs[activeTab]}
+                        onChange={val => saveFile(activeTab, val)}
+                        fileType={fileType(activeTab)}
+                        onKeyDown={e => {
+                          if (e.key === 'Tab') {
+                            e.preventDefault();
+                            const ta = e.target, s = ta.selectionStart, en = ta.selectionEnd;
+                            const val = ta.value.substring(0, s) + '  ' + ta.value.substring(en);
+                            saveFile(activeTab, val);
+                            requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = s + 2; });
+                          }
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, background: DS.surface1 }}>
+                      <div style={{ fontSize: 52, filter: `drop-shadow(0 0 16px ${DS.green}30)` }}>📝</div>
+                      <div style={{ fontSize: 14, color: DS.text1, fontFamily: DS.mono }}>Select a file to edit</div>
+                      <div style={{ fontSize: 12, color: DS.text1, fontFamily: DS.mono }}>or right-click in explorer</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Terminal */}
+              {(activePanel === 'terminal' || activePanel === 'split' || (isMobile && mobileDrawer === 'terminal')) && (
+                <div style={{ flex: activePanel === 'split' ? '0 0 390px' : 1, display: 'flex', flexDirection: 'column', background: DS.bg, overflow: 'hidden', borderTop: activePanel !== 'split' ? `1px solid ${DS.border1}` : 'none' }}>
+
+                  {/* Terminal header */}
+                  <div style={{ padding: '5px 14px', borderBottom: `1px solid ${DS.border1}`, background: `${DS.surface2}cc`, backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <span style={{ color: DS.green, fontSize: 13, filter: `drop-shadow(0 0 4px ${DS.green}60)` }}>⚡</span>
+                    <span style={{ fontSize: 11, color: DS.text1, fontFamily: DS.mono, textTransform: 'uppercase', letterSpacing: 1 }}>Terminal</span>
+                    {git.initialized && <Tag color={DS.green}>{git.HEAD}</Tag>}
+                    {git.merging && <Tag color={DS.orange}>MERGING</Tag>}
+                    <div style={{ flex: 1 }} />
+                    <Btn onClick={clearLines} style={{ fontSize: 10, color: DS.text1, padding: '2px 7px' }}>clear</Btn>
+                  </div>
+
+                  {/* Terminal body */}
+                  <div ref={termBodyRef} style={{ flex: 1, overflow: 'auto', padding: '10px 16px 4px' }}>
+                    {termLines.map((l, i) => <div key={l.id || i} className="gv-slide-in">{renderTermLine(l)}</div>)}
+
+                    {/* Inline commit editor */}
+                    {showCommitBox && (
+                      <div className="gv-slide-in" style={{ margin: '10px 0', background: DS.surface2, border: `1px solid ${DS.border2}`, borderRadius: 9, padding: 14 }}>
+                        <div style={{ fontSize: 11, color: DS.text1, marginBottom: 7, fontFamily: DS.mono }}>Commit message:</div>
+                        <textarea autoFocus value={commitMsgDraft} onChange={e => setCommitMsgDraft(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (commitMsgDraft.trim()) { runCommand(`git commit -m "${commitMsgDraft.trim()}"`); setCommitMsgDraft(''); setShowCommitBox(false); }
+                            }
+                            if (e.key === 'Escape') { setShowCommitBox(false); setCommitMsgDraft(''); }
+                          }}
+                          placeholder="Short imperative summary..."
+                          style={{ width: '100%', background: DS.surface3, border: `1px solid ${DS.border2}`, borderRadius: 6, padding: '8px 10px', color: DS.text1, fontSize: 12, resize: 'none', height: 58, outline: 'none', fontFamily: DS.mono, boxSizing: 'border-box' }}
+                          onFocus={e => e.target.style.borderColor = `${DS.green}55`}
+                          onBlur={e => e.target.style.borderColor = DS.border2}
+                        />
+                        <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
+                          <Btn variant="primary" onClick={() => { if (commitMsgDraft.trim()) { runCommand(`git commit -m "${commitMsgDraft.trim()}"`); setCommitMsgDraft(''); setShowCommitBox(false); } }}>Commit ↵</Btn>
+                          <Btn variant="dim" onClick={() => { setShowCommitBox(false); setCommitMsgDraft(''); }}>Cancel Esc</Btn>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Blinking cursor line */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2, fontFamily: DS.mono }}>
+                      <span style={{ color: DS.green, fontSize: 12 }}>{git.initialized ? `(${git.HEAD}) $` : ' $'}</span>
+                      <div style={{ width: 7, height: 14, background: DS.green, display: 'inline-block', animation: 'gv-blink 1.1s step-end infinite', borderRadius: 1, opacity: 0.7 }} />
+                    </div>
+                  </div>
+
+                  {/* Terminal input */}
+                  <div style={{ padding: '7px 14px', borderTop: `1px solid ${DS.border1}`, background: `${DS.surface2}bb`, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, backdropFilter: 'blur(8px)' }}>
+                    <span style={{ color: DS.green, fontSize: 13, flexShrink: 0, fontFamily: DS.mono }}>
+                      {git.initialized ? `(${git.HEAD}) $` : '$'}
+                    </span>
+                    <input
+                      ref={termInputRef}
+                      value={termInput}
+                      onChange={e => setTermInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { runCommand(termInput); setTermInput(''); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); setHistIdx(i => { const n = Math.min(i + 1, termHistory.length - 1); setTermInput(termHistory[n] || ''); return n; }); }
+                        else if (e.key === 'ArrowDown') { e.preventDefault(); setHistIdx(i => { const n = Math.max(i - 1, -1); setTermInput(n === -1 ? '' : termHistory[n] || ''); return n; }); }
+                      }}
+                      placeholder="type a command (try: git init)"
+                      autoFocus
+                      className="gv-term-input"
+                      style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: DS.text1, fontFamily: DS.mono, fontSize: 13 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── GitHub panel ── */}
+        {!isMobile && (
+          <div style={{ width: isTablet ? 280 : 330, flexShrink: 0, overflow: 'hidden' }}>
+            {renderGitHubPanel()}
+          </div>
+        )}
+
+        {/* ── Mobile GitHub drawer ── */}
+        {isMobile && mobileDrawer === 'github' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            {renderGitHubPanel()}
+          </div>
+        )}
       </div>
 
       {/* ── Status bar ── */}
-      <div style={{ height:22, background:'#007acc', display:'flex', alignItems:'center', gap:12, padding:'0 50px 0 12px', fontSize:11, color:'rgba(255,255,255,0.85)', flexShrink:0, overflow:'hidden' }}>
-        <span>⎇ {git.initialized?git.HEAD:'No repo'}</span>
-        {git.merging && <span style={{color:'#ffb347',fontWeight:700}}>⚠ MERGING</span>}
-        {activeTab && <span style={{color:'rgba(255,255,255,0.6)'}}>{activeTab}</span>}
-        <div style={{flex:1}}/>
-        {activeTab && <span style={{color:'rgba(255,255,255,0.5)',textTransform:'uppercase',fontSize:10}}>{fileType(activeTab)}</span>}
-        <span style={{color:'rgba(255,255,255,0.4)'}}>UTF-8</span>
-        <span style={{color:'rgba(255,255,255,0.4)'}}>GitVerse IDE v2</span>
+      <div style={{ height: 24, background: `linear-gradient(90deg, ${DS.green}22, ${DS.cyan}15, transparent)`, borderTop: `1px solid ${DS.green}20`, display: 'flex', alignItems: 'center', gap: 14, padding: '0 14px', fontSize: 11, color: DS.text2, flexShrink: 0, fontFamily: DS.mono, position: 'relative', zIndex: 10 }}>
+        <span style={{ color: DS.green, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: DS.green, display: 'inline-block', boxShadow: `0 0 5px ${DS.green}` }} />
+          {git.initialized ? git.HEAD : 'no repo'}
+        </span>
+        {git.merging && <span style={{ color: DS.orange }}>⚠ MERGING</span>}
+        {Object.keys(git.staged).length > 0 && <span style={{ color: DS.green }}>↑ {Object.keys(git.staged).length} staged</span>}
+        <div style={{ flex: 1 }} />
+        {activeTab && <span style={{ color: DS.text1 }}>{activeTab}</span>}
+        {activeTab && <span style={{ color: DS.text1, textTransform: 'uppercase', letterSpacing: 0.5 }}>{fileType(activeTab)}</span>}
+        <span style={{ color: DS.text1 }}>GitVerse IDE v3</span>
       </div>
 
-      {/* Context menu */}
+      {/* ── Context menu ── */}
       {contextMenu && (
         <>
-          <div onClick={()=>setContextMenu(null)} style={{position:'fixed',inset:0,zIndex:999}}/>
-          <div style={{ position:'fixed', left:contextMenu.x, top:contextMenu.y, background:'#1c2128', border:'1px solid #30363d', borderRadius:8, boxShadow:'0 8px 30px rgba(0,0,0,0.6)', zIndex:1000, overflow:'hidden', minWidth:170 }}>
-            {contextMenu.type==='file' && [
-              { label:'📝 Open', action:()=>{ openFile(contextMenu.path); setContextMenu(null); } },
-              { label:'✏️ Rename', action:()=>{ setRenaming(contextMenu.path); setContextMenu(null); } },
-              { label:'➕ Stage', action:()=>{ runCommand(`git add ${contextMenu.path}`); setContextMenu(null); } },
-              { label:'↩️ Restore', action:()=>{ runCommand(`git restore ${contextMenu.path}`); setContextMenu(null); } },
-              { label:'👁 Blame', action:()=>{ runCommand(`git blame ${contextMenu.path}`); setActivePanel('terminal'); setContextMenu(null); } },
-              { label:'🗑 Delete', action:()=>{ deleteFilePath(contextMenu.path); setContextMenu(null); } },
-            ].map(item=>(
-              <div key={item.label} onClick={item.action} style={{ padding:'8px 16px', fontSize:12, color:'#e6edf3', cursor:'pointer', transition:'background 0.1s' }}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-              >{item.label}</div>
-            ))}
-            {contextMenu.type==='folder' && [
-              { label:'📄 New file here', action:()=>{ setNewItemDraft({type:'file',parent:contextMenu.path}); setExpandedFolders(e=>({...e,[contextMenu.path]:true})); setContextMenu(null); } },
-              { label:'📁 New folder here', action:()=>{ setNewItemDraft({type:'folder',parent:contextMenu.path}); setContextMenu(null); } },
-            ].map(item=>(
-              <div key={item.label} onClick={item.action} style={{ padding:'8px 16px', fontSize:12, color:'#e6edf3', cursor:'pointer', transition:'background 0.1s' }}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-              >{item.label}</div>
+          <div onClick={() => setContextMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
+          <div className="gv-pop-in" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, background: `${DS.surface3}f8`, backdropFilter: 'blur(16px)', border: `1px solid ${DS.border2}`, borderRadius: 10, boxShadow: `0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px ${DS.border1}`, zIndex: 1000, overflow: 'hidden', minWidth: 176 }}>
+            {(contextMenu.type === 'file' ? [
+              { icon: '📝', label: 'Open', action: () => { openFile(contextMenu.path); setContextMenu(null); } },
+              { icon: '✏️', label: 'Rename', action: () => { setRenaming(contextMenu.path); setContextMenu(null); } },
+              { icon: '➕', label: 'Stage', action: () => { runCommand(`git add ${contextMenu.path}`); setContextMenu(null); } },
+              { icon: '↩️', label: 'Restore', action: () => { runCommand(`git restore ${contextMenu.path}`); setContextMenu(null); } },
+              { icon: '👁', label: 'Blame', action: () => { runCommand(`git blame ${contextMenu.path}`); setActivePanel('terminal'); setContextMenu(null); } },
+              { icon: '🗑', label: 'Delete', action: () => { deleteFilePath(contextMenu.path); setContextMenu(null); }, danger: true },
+            ] : [
+              { icon: '📄', label: 'New file here', action: () => { setNewItemDraft({ type: 'file', parent: contextMenu.path }); setExpandedFolders(e => ({ ...e, [contextMenu.path]: true })); setContextMenu(null); } },
+              { icon: '📁', label: 'New folder here', action: () => { setNewItemDraft({ type: 'folder', parent: contextMenu.path }); setContextMenu(null); } },
+            ]).map(item => (
+              <div key={item.label} onClick={item.action} className="gv-ctx-item" style={{ padding: '9px 16px', fontSize: 13, color: item.danger ? DS.red : DS.text1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontFamily: DS.ui, transition: 'background 0.1s', borderBottom: `1px solid ${DS.border1}` }}>
+                <span style={{ fontSize: 14, width: 18, textAlign: 'center' }}>{item.icon}</span> {item.label}
+              </div>
             ))}
           </div>
         </>
       )}
-
-      <style>{`
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .code-line { min-height: 20px; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0d1117; }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
-      `}</style>
     </div>
   );
 }
@@ -1968,72 +2625,54 @@ export default function GitVerseIDE({ onXP, onBack }) {
 // ── Help text ─────────────────────────────────────────────────────
 const HELP_TEXT = `
 ╔══════════════════════════════════════════════════════╗
-║         GITVERSE IDE v2 — COMMAND REFERENCE           ║
+║         GITVERSE IDE v3 — COMMAND REFERENCE           ║
 ╠══════════════════════════════════════════════════════╣
 ║  SHELL                                                ║
-║  ls          List files      touch file.txt  New file  ║
-║  cat README.md   Show file  mkdir folder  New folder   ║
-║  echo "x">f  Write to file  rm file.txt   Delete file  ║
-║  mv old.js new.js  Rename      clear       Clear screen ║
+║  ls          List files    touch file.txt  New file   ║
+║  cat README.md   Show file  mkdir folder  New folder  ║
+║  echo "x">f  Write to file  rm file.txt   Delete      ║
+║  mv old.js new.js  Rename   clear         Clear screen║
 ╠══════════════════════════════════════════════════════╣
 ║  GIT SETUP                                            ║
 ║  git init             Initialize repository           ║
 ║  git config user.name "Name"                         ║
 ║  git config user.email "e@mail.com"                  ║
-║  git config --list    Show all config                ║
-║  git --version        Show version                   ║
 ╠══════════════════════════════════════════════════════╣
 ║  CORE WORKFLOW                                        ║
-║  git status           Show changes                   ║
+║  git status                  Show changes            ║
 ║  git add README.md           Stage one file          ║
-║  git add src/App.js          Stage a nested file    ║
+║  git add src/App.js          Stage a nested file     ║
 ║  git add .                   Stage everything        ║
 ║  git commit -m "feat: login" Commit with message     ║
 ║  git commit                  Opens inline editor     ║
-║  git log                     Full commit log         ║
-║  git log --oneline           Compact one-line log    ║
-║  git log --oneline --graph   With branch graph       ║
+║  git log --oneline --graph   Visual commit graph     ║
 ║  git diff                    Unstaged changes        ║
 ║  git diff --staged           Staged changes          ║
 ║  git show a1b2c3d            Show commit + diff      ║
 ╠══════════════════════════════════════════════════════╣
 ║  BRANCHES                                             ║
-║  git branch            List branches                 ║
+║  git branch                  List branches           ║
 ║  git branch feature          Create branch           ║
 ║  git branch -d feature       Delete branch           ║
 ║  git switch feature          Switch branch           ║
 ║  git switch -c feature       Create & switch         ║
-║  git checkout -b feature   Create & switch (old)   ║
 ╠══════════════════════════════════════════════════════╣
 ║  UNDOING                                              ║
-║  git restore README.md         Discard file changes   ║
+║  git restore README.md       Discard file changes    ║
 ║  git restore --staged README.md  Unstage file        ║
-║  git reset HEAD~1           Undo last commit         ║
-║  git reset --hard HEAD~1    Undo + discard files     ║
-║  git revert a1b2c3d            Safe undo (new commit) ║
-║  git reflog                 View all HEAD moves      ║
-╠══════════════════════════════════════════════════════╣
-║  MERGE & REBASE                                       ║
-║  git merge feature             Merge into current     ║
-║  git rebase main               Rebase onto branch     ║
-║  git cherry-pick a1b2c3d       Pick one commit        ║
-╠══════════════════════════════════════════════════════╣
-║  STASH                                                ║
-║  git stash             Save work-in-progress         ║
-║  git stash pop         Restore last stash            ║
-║  git stash list        List all stashes              ║
-║  git stash drop        Delete top stash              ║
+║  git reset HEAD~1            Undo last commit        ║
+║  git reset --hard HEAD~1     Undo + discard files    ║
+║  git revert a1b2c3d          Safe undo (new commit)  ║
+║  git stash / git stash pop   Save & restore WIP      ║
 ╠══════════════════════════════════════════════════════╣
 ║  REMOTE                                               ║
-║  git remote -v          List remotes                 ║
-║  git remote add origin URL     Add remote             ║
-║  git push               Push to origin               ║
-║  git pull               Pull from origin             ║
-║  git fetch              Fetch without merge          ║
+║  git remote add origin URL   Add remote              ║
+║  git push                    Push to origin          ║
+║  git pull                    Pull from origin        ║
 ╠══════════════════════════════════════════════════════╣
 ║  INVESTIGATION                                        ║
-║  git blame README.md           Who wrote each line    ║
-║  git tag               List tags                     ║
-║  git tag v1.0.0        Create tag                    ║
+║  git blame README.md         Who wrote each line     ║
+║  git log --oneline           Compact history         ║
+║  git reflog                  All HEAD moves          ║
 ╚══════════════════════════════════════════════════════╝
 `;
